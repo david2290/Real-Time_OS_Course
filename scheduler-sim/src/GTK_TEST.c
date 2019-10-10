@@ -37,12 +37,12 @@ int main(int argc, char* argv[])
 
 #include <gtk/gtk.h>
 
-static gboolean fill (gpointer user_data)
+static gboolean 
+fill (gpointer user_data)
 {
   GtkWidget *progress_bar = user_data;
 
-  gdouble fraction;
-  fraction = gtk_progress_bar_get_fraction (GTK_PROGRESS_BAR (progress_bar));
+  gdouble fraction = gtk_progress_bar_get_fraction (GTK_PROGRESS_BAR (progress_bar));
 
   fraction += 0.1;
 
@@ -53,25 +53,20 @@ static gboolean fill (gpointer user_data)
   return FALSE;
 }
 
-static void activate (GtkApplication *app, gpointer user_data){
-  GtkWidget *window;
-  GtkWidget *progress_bar;
-
-  gdouble fraction = 0.0;
-
-  window = gtk_application_window_new (app);
+static void 
+activate (GtkApplication *app, gpointer user_data){
+  GtkWidget *window = gtk_application_window_new(app);
   gtk_window_set_title (GTK_WINDOW (window), "ProgressBar Example");
   gtk_window_set_default_size (GTK_WINDOW (window), 220, 20);
 
-  progress_bar = gtk_progress_bar_new();
+  GtkWidget *progress_bar = gtk_progress_bar_new();
   gtk_container_add (GTK_CONTAINER (window), progress_bar);
 
+  gdouble fraction = 0.0;
   gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (progress_bar), fraction);
 
   g_timeout_add(500, fill, GTK_PROGRESS_BAR (progress_bar));
-
   gtk_widget_show_all (window);
-
 }
 
 
