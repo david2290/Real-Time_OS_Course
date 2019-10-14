@@ -3,8 +3,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <time.h>
 #include <setjmp.h>
 
+#define NUM_PROCESSES 5
 
 typedef sigjmp_buf Env_buf;
 
@@ -53,13 +55,22 @@ Suspend
   return proc->result;
 }
 
-int choose_winner(Process *p,int size){
+int choose_winner(Process *p, int size, int total_tickets){
+  int random_ticket = rand()%total_tickets;
+  int acc_tickets = 0;
   for(int i=0;i<size;i++){
-    if(!p[i].finished){
-     return p[i].pid;
+    if(acc_tickets+p[i].tickets>random_ticket){
+      if(!p[i].finished){
+        return p[i].pid;
+      }else{
+        random_ticket = rand()%total_tickets;
+        i=-1;
+        acc_tickets = 0;
+        continue;
+      }
     }
+    acc_tickets+=p[i].tickets;
   }
-  return 0;
 }
 bool processes_are_finished(Process *p,int size){
   bool allfinished=true;
@@ -67,11 +78,11 @@ bool processes_are_finished(Process *p,int size){
     allfinished = allfinished && p[i].finished;
   return allfinished;
 }
-int scheduler(Process *p, int size){
+int lottery_scheduler(Process *p, int size, int total_tickets){
   Env_buf scheduler_env;
   setjmp(scheduler_env);
-  int pid_winner = choose_winner(p,size);
-  printf("winner: pid%d\n",pid_winner);
+  int pid_winner = choose_winner(p,size,total_tickets);
+  //printf("winner: pid%d\n",pid_winner);
   pi_approx_arcsen(&p[pid_winner],&scheduler_env);
   if(!processes_are_finished(p,size)){
     longjmp(scheduler_env,0);
@@ -79,20 +90,24 @@ int scheduler(Process *p, int size){
   return 0;
 }
 
+
 int main(){
-  Process *p=(Process*)malloc(2*sizeof(Process));
-  for(int i=0;i<2;i++){
+  Process *p=(Process*)malloc(NUM_PROCESSES*sizeof(Process));
+  srand(time(0));
+  int total_tickets=0;
+  for(int i=0;i<NUM_PROCESSES;i++){
     p[i].pid=i;
-    p[i].workload=20;
-    p[i].tickets=1;
+    p[i].workload=1000;
+    p[i].tickets=100;
     p[i].suspended=false;
     p[i].quantum=1;
     p[i].coeff=2.0;
     p[i].result=0;
     p[i].finished=false;
     p[i].indx_term=1;
+    total_tickets+=p[i].tickets;
   }
-  scheduler(p,2);
+  lottery_scheduler(p,NUM_PROCESSES,total_tickets);
   free(p);
   return 0;
 }
