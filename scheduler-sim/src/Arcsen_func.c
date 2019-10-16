@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <gmodule.h>
 #include <time.h>
 #include <setjmp.h>
 
@@ -22,6 +23,13 @@ typedef struct Process{
   long double result;
   int indx_term;
 }Process;
+
+
+typedef struct Lottery_task{
+  GList *lst;
+  int total_tickets;
+}Lottery_task;
+
 
 double pi_approx_arcsen(Process *proc, Env_buf *scheduler_env){
   long double result = proc->result;
@@ -55,60 +63,76 @@ Suspend
   return proc->result;
 }
 
-int choose_winner(Process *p, int size, int total_tickets){
-  int random_ticket = rand()%total_tickets;
-  int acc_tickets = 0;
-  for(int i=0;i<size;i++){
-    if(acc_tickets+p[i].tickets>random_ticket){
-      if(!p[i].finished){
-        return p[i].pid;
-      }else{
-        random_ticket = rand()%total_tickets;
-        i=-1;
-        acc_tickets = 0;
-        continue;
-      }
+Process *
+choose_winner(Lottery_task *lt){
+  Process *p;
+  do{
+    int random_ticket = rand()%lt->total_tickets;
+    int acc_tickets = 0;
+    GList *l = lt->lst;
+    p = l->data;
+    while(acc_tickets+p->tickets<=random_ticket && l != NULL){
+      acc_tickets+=p->tickets;
+      l = l->next;
+      p = l->data;
     }
-    acc_tickets+=p[i].tickets;
-  }
+  }while(p->finished);
+  return p;
 }
-bool processes_are_finished(Process *p,int size){
+
+
+bool processes_are_finished(Lottery_task *lt){
   bool allfinished=true;
-  for(int i=0;i<size;i++)
-    allfinished = allfinished && p[i].finished;
+  for(GList *l = lt->lst; l!=NULL; l=l->next){
+    Process *p = l->data;
+    allfinished = allfinished && p->finished;
+  }
   return allfinished;
 }
-int lottery_scheduler(Process *p, int size, int total_tickets){
+int lottery_scheduler(Lottery_task *lt){
   Env_buf scheduler_env;
   setjmp(scheduler_env);
-  int pid_winner = choose_winner(p,size,total_tickets);
+  Process *pid_winner = choose_winner(lt);
   //printf("winner: pid%d\n",pid_winner);
-  pi_approx_arcsen(&p[pid_winner],&scheduler_env);
-  if(!processes_are_finished(p,size)){
+  pi_approx_arcsen(pid_winner,&scheduler_env);
+  if(!processes_are_finished(lt)){
     longjmp(scheduler_env,0);
   }
   return 0;
 }
 
+Lottery_task
+create_lottery_task(int number){
+  Lottery_task lt;
+  lt.lst=NULL;
+  srand(time(0));
+  lt.total_tickets=0;
+  for(int i=0;i<NUM_PROCESSES;i++){
+    Process *p = g_new(Process,1);
+    p->pid=i;
+    p->workload=100;
+    p->tickets=100;
+    p->suspended=false;
+    p->quantum=1;
+    p->coeff=2.0;
+    p->result=0;
+    p->finished=false;
+    p->indx_term=1;
+    lt.lst=g_list_append(lt.lst,(gpointer) p);
+    lt.total_tickets+=p->tickets;
+  }
+  return lt;
+}
+
+void free_lottery_task(Lottery_task* lt){
+  g_list_free_full(lt->lst,g_free);
+}
+
 
 int main(){
-  Process *p=(Process*)malloc(NUM_PROCESSES*sizeof(Process));
-  srand(time(0));
-  int total_tickets=0;
-  for(int i=0;i<NUM_PROCESSES;i++){
-    p[i].pid=i;
-    p[i].workload=1000;
-    p[i].tickets=100;
-    p[i].suspended=false;
-    p[i].quantum=1;
-    p[i].coeff=2.0;
-    p[i].result=0;
-    p[i].finished=false;
-    p[i].indx_term=1;
-    total_tickets+=p[i].tickets;
-  }
-  lottery_scheduler(p,NUM_PROCESSES,total_tickets);
-  free(p);
+  Lottery_task lt = create_lottery_task(NUM_PROCESSES);
+  lottery_scheduler(&lt);
+  free_lottery_task(&lt);
   return 0;
 }
-// gcc Arcsen_func.c -o ArcSenProgram -lm
+// gcc  Arcsen_func.c -o ArcSenProgram -lm -fsanitize=address -fno-omit-frame-pointer `pkg-config --cflags --libs glib-2.0` -g -Wall
