@@ -4,7 +4,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <gmodule.h>
+#include <signal.h>
 #include <time.h>
+#include <unistd.h>
 #include <setjmp.h>
 
 #define NUM_PROCESSES 5
@@ -31,12 +33,18 @@ typedef struct Lottery_task{
   int total_tickets;
 }Lottery_task;
 
+static bool timeout = false;
+
+void sig_timeout(int signo){timeout=true;}
+
+void config_timeout(){signal(SIGALRM,sig_timeout);}
+
+void start_timeout_timer(int quantum){ualarm(quantum,0);}
 
 double pi_approx_arcsen(Process *proc, Env_buf *scheduler_env){
   long double result = proc->result;
   long double coeff = proc->coeff;
   int end = proc->workload*50;
-  int suspend = proc->quantum*50;
   for(int i=proc->indx_term; i <= end; i++){
     if(i%2==1){
       result+=coeff/i;
@@ -48,12 +56,12 @@ Suspend
 */
   if(i%500==0)
     printf("pid:%d, terms:%d ,approx:%0.10Lf\n",proc->pid,i,result);
-  if(i%suspend==0 && i>0){
+  if(timeout){
     proc->indx_term=i+1;
     proc->result=result;
     proc->coeff=coeff;
     proc->suspended=true;
-    longjmp(*scheduler_env,0);
+    siglongjmp(*scheduler_env,0);
   }
 /*
 Suspend
@@ -120,13 +128,15 @@ int lottery_scheduler(Lottery_task *lt){
   Lottery_task not_ready_queue = *lt;
   Lottery_task ready_queue = {.lst=NULL, .total_tickets=0};
   Lottery_task finished_queue = {.lst=NULL, .total_tickets=0};
+  config_timeout();
   while(g_list_length(finished_queue.lst)<total_processes){
     Env_buf scheduler_env;
-    setjmp(scheduler_env);
+    sigsetjmp(scheduler_env,1);
     update_arrival(&not_ready_queue,&ready_queue);
     if(ready_queue.lst==NULL) continue;
     Process *pid_winner = choose_winner(&ready_queue);
     if(pid_winner!=NULL){
+      start_timeout_timer(pid_winner->quantum);
       pi_approx_arcsen(pid_winner,&scheduler_env);
     }else continue;
     update_process_finished(&ready_queue,&finished_queue);
@@ -146,7 +156,7 @@ create_lottery_task(int number){
     p->workload=100;
     p->tickets=100;
     p->suspended=false;
-    p->quantum=50;
+    p->quantum=100;
     p->arrival_time=1;
     p->coeff=2.0;
     p->result=0.0;
@@ -161,6 +171,7 @@ create_lottery_task(int number){
 void free_lottery_task(Lottery_task* lt){
   g_list_free_full(lt->lst,g_free);
 }
+
 
 
 int main(){
