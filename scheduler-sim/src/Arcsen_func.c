@@ -89,7 +89,7 @@ update_arrival(
   time_t local_time = time(NULL);
   for(GList *l=not_ready_queue->lst; l!=NULL; l=l->next){
     Process *p=l->data;
-    if(p->arrival_time >= (local_time-init_time)){
+    if(p->arrival_time <= (local_time-init_time)){
       ready_queue->total_tickets += p->tickets;
       not_ready_queue->total_tickets -= p->tickets;
       ready_queue->lst = g_list_append(ready_queue->lst,(gpointer)p);
@@ -124,8 +124,11 @@ int lottery_scheduler(Lottery_task *lt){
     Env_buf scheduler_env;
     setjmp(scheduler_env);
     update_arrival(&not_ready_queue,&ready_queue);
+    if(ready_queue.lst==NULL) continue;
     Process *pid_winner = choose_winner(&ready_queue);
-    pi_approx_arcsen(pid_winner,&scheduler_env);
+    if(pid_winner!=NULL){
+      pi_approx_arcsen(pid_winner,&scheduler_env);
+    }else continue;
     update_process_finished(&ready_queue,&finished_queue);
   }
   return 0;
@@ -143,8 +146,8 @@ create_lottery_task(int number){
     p->workload=100;
     p->tickets=100;
     p->suspended=false;
-    p->quantum=1;
-    p->arrival_time=0;
+    p->quantum=50;
+    p->arrival_time=1;
     p->coeff=2.0;
     p->result=0.0;
     p->finished=false;
