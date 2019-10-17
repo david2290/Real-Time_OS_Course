@@ -17,6 +17,7 @@ typedef struct Process{
   int workload;
   int tickets;
   int quantum;
+  int arrival_time;
   bool suspended;
   bool finished;
   long double coeff;
@@ -66,37 +67,66 @@ Suspend
 Process *
 choose_winner(Lottery_task *lt){
   Process *p;
-  do{
-    int random_ticket = rand()%lt->total_tickets;
-    int acc_tickets = 0;
-    GList *l = lt->lst;
+  int random_ticket = rand()%lt->total_tickets;
+  int acc_tickets = 0;
+  GList *l = lt->lst;
+  p = l->data;
+  while(acc_tickets+p->tickets<=random_ticket && l != NULL){
+    acc_tickets+=p->tickets;
+    l = l->next;
     p = l->data;
-    while(acc_tickets+p->tickets<=random_ticket && l != NULL){
-      acc_tickets+=p->tickets;
-      l = l->next;
-      p = l->data;
-    }
-  }while(p->finished);
+  }
   return p;
 }
 
-
-bool processes_are_finished(Lottery_task *lt){
-  bool allfinished=true;
-  for(GList *l = lt->lst; l!=NULL; l=l->next){
-    Process *p = l->data;
-    allfinished = allfinished && p->finished;
+void
+update_arrival(
+    Lottery_task *not_ready_queue,
+    Lottery_task *ready_queue)
+{
+  static time_t init_time = 0;
+  if(init_time==0) init_time = time(NULL);
+  time_t local_time = time(NULL);
+  for(GList *l=not_ready_queue->lst; l!=NULL; l=l->next){
+    Process *p=l->data;
+    if(p->arrival_time >= (local_time-init_time)){
+      ready_queue->total_tickets += p->tickets;
+      not_ready_queue->total_tickets -= p->tickets;
+      ready_queue->lst = g_list_append(ready_queue->lst,(gpointer)p);
+      not_ready_queue->lst = g_list_remove(not_ready_queue->lst,(gpointer)p);
+    }
   }
-  return allfinished;
 }
+
+void
+update_process_finished(
+    Lottery_task *ready_queue,
+    Lottery_task *finished_queue)
+{
+  for(GList *l=ready_queue->lst; l!=NULL; l=l->next){
+    Process *p=l->data;
+      if(p->finished){
+        ready_queue->total_tickets -= p->tickets;
+        finished_queue->total_tickets += p->tickets;
+        finished_queue->lst = g_list_append(finished_queue->lst,(gpointer)p);
+        ready_queue->lst = g_list_remove(ready_queue->lst,(gpointer)p);
+      }
+    }
+}
+
+
 int lottery_scheduler(Lottery_task *lt){
-  Env_buf scheduler_env;
-  setjmp(scheduler_env);
-  Process *pid_winner = choose_winner(lt);
-  //printf("winner: pid%d\n",pid_winner);
-  pi_approx_arcsen(pid_winner,&scheduler_env);
-  if(!processes_are_finished(lt)){
-    longjmp(scheduler_env,0);
+  int total_processes = g_list_length(lt->lst);
+  Lottery_task not_ready_queue = *lt;
+  Lottery_task ready_queue = {.lst=NULL, .total_tickets=0};
+  Lottery_task finished_queue = {.lst=NULL, .total_tickets=0};
+  while(g_list_length(finished_queue.lst)<total_processes){
+    Env_buf scheduler_env;
+    setjmp(scheduler_env);
+    update_arrival(&not_ready_queue,&ready_queue);
+    Process *pid_winner = choose_winner(&ready_queue);
+    pi_approx_arcsen(pid_winner,&scheduler_env);
+    update_process_finished(&ready_queue,&finished_queue);
   }
   return 0;
 }
@@ -114,8 +144,9 @@ create_lottery_task(int number){
     p->tickets=100;
     p->suspended=false;
     p->quantum=1;
+    p->arrival_time=0;
     p->coeff=2.0;
-    p->result=0;
+    p->result=0.0;
     p->finished=false;
     p->indx_term=1;
     lt.lst=g_list_append(lt.lst,(gpointer) p);
