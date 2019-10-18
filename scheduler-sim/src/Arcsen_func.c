@@ -20,7 +20,6 @@ typedef struct Process{
   int tickets;
   int quantum;
   int arrival_time;
-  bool suspended;
   bool finished;
   long double coeff;
   long double result;
@@ -30,6 +29,7 @@ typedef struct Process{
 
 typedef struct Lottery_task{
   GList *lst;
+  int quantum;
   int total_tickets;
 }Lottery_task;
 
@@ -60,14 +60,12 @@ Suspend
     proc->indx_term=i+1;
     proc->result=result;
     proc->coeff=coeff;
-    proc->suspended=true;
     siglongjmp(*scheduler_env,0);
   }
 /*
 Suspend
 */
   }
-  proc->suspended=false;
   proc->finished=true;
   return proc->result;
 }
@@ -126,8 +124,8 @@ update_process_finished(
 int lottery_scheduler(Lottery_task *lt){
   int total_processes = g_list_length(lt->lst);
   Lottery_task not_ready_queue = *lt;
-  Lottery_task ready_queue = {.lst=NULL, .total_tickets=0};
-  Lottery_task finished_queue = {.lst=NULL, .total_tickets=0};
+  Lottery_task ready_queue = {.lst=NULL, .quantum=lt->quantum, .total_tickets=0};
+  Lottery_task finished_queue = {.lst=NULL, .quantum=lt->quantum, .total_tickets=0};
   config_timeout();
   while(g_list_length(finished_queue.lst)<total_processes){
     Env_buf scheduler_env;
@@ -136,7 +134,7 @@ int lottery_scheduler(Lottery_task *lt){
     if(ready_queue.lst==NULL) continue;
     Process *pid_winner = choose_winner(&ready_queue);
     if(pid_winner!=NULL){
-      start_timeout_timer(pid_winner->quantum);
+      start_timeout_timer(lt->quantum);
       pi_approx_arcsen(pid_winner,&scheduler_env);
     }else continue;
     update_process_finished(&ready_queue,&finished_queue);
@@ -148,6 +146,7 @@ Lottery_task
 create_lottery_task(int number){
   Lottery_task lt;
   lt.lst=NULL;
+  lt.quantum=100;
   srand(time(0));
   lt.total_tickets=0;
   for(int i=0;i<NUM_PROCESSES;i++){
@@ -155,7 +154,6 @@ create_lottery_task(int number){
     p->pid=i;
     p->workload=100;
     p->tickets=100;
-    p->suspended=false;
     p->quantum=100;
     p->arrival_time=1;
     p->coeff=2.0;
@@ -171,8 +169,6 @@ create_lottery_task(int number){
 void free_lottery_task(Lottery_task* lt){
   g_list_free_full(lt->lst,g_free);
 }
-
-
 
 int main(){
   Lottery_task lt = create_lottery_task(NUM_PROCESSES);
