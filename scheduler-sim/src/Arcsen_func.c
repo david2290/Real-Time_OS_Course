@@ -35,7 +35,7 @@ typedef struct Lottery_task{
 
 static bool timeout = false;
 
-void sig_timeout(int signo){timeout=true;}
+void sig_timeout(int signo){timeout=true;} //CUando pasa la interrupcion
 
 void config_timeout(){signal(SIGALRM,sig_timeout);}
 
@@ -54,8 +54,10 @@ double pi_approx_arcsen(Process *proc, Env_buf *scheduler_env){
 /*
 Suspend
 */
-  if(i%500==0)
-    printf("pid:%d, terms:%d ,approx:%0.10Lf\n",proc->pid,i,result);
+  if(i%500==0)//cada 500 terminos hace un print
+    printf("pid:%d, terms:%d ,approx:%0.10Lf\n",proc->pid,i,result); //Dif las barras
+  // Se podria agregar q actualice la barra
+
   if(timeout){
     proc->indx_term=i+1;
     proc->result=result;
@@ -143,7 +145,7 @@ int lottery_scheduler(Lottery_task *lt){
 }
 
 Lottery_task
-create_lottery_task(int number){
+create_lottery_task(int number){ //pasa el archivo
   Lottery_task lt;
   lt.lst=NULL;
   lt.quantum=100;
@@ -160,7 +162,7 @@ create_lottery_task(int number){
     p->result=0.0;
     p->finished=false;
     p->indx_term=1;
-    lt.lst=g_list_append(lt.lst,(gpointer) p);
+    lt.lst=g_list_append(lt.lst,(gpointer) p); // apend de una lista de procesos
     lt.total_tickets+=p->tickets;
   }
   return lt;
