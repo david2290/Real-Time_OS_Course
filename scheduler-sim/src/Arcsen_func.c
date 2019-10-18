@@ -8,6 +8,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <setjmp.h>
+#include <string.h>
 
 #include <gtk/gtk.h>
 #include <gtk/gtkx.h>
@@ -16,17 +17,18 @@
 #include <ctype.h>
 
 #define NUM_PROCESSES 5  // CAmbiar por los procesos q estan en el archivo
+#define MAX_NUMBER_PROCESSES 25
 //***************** GTK ***************************
 //gcc -Wno-format -o TestUI TestGladeINtegration.c -Wno-deprecated-declarations -Wno-format-security -lm `pkg-config --cflags --libs gtk+-3.0` -export-dynamic
 
 GtkWidget     *window;
 GtkWidget     *Gtk_Fixed;
 GtkWidget     *progress_bar1;
-GtkWidget     *progress_barArreglo[25]; // OJO
+GtkWidget     *progress_bars[25]; // OJO
 GtkWidget     *progress_bar2;
 GtkWidget     *button;
 GtkWidget     *label;
-GtkWidget     *LabelArreglo[25];        // OJO
+GtkWidget     *labels[25];        // OJO
 
 GtkBuilder    *builder;
 
@@ -61,21 +63,17 @@ void sig_timeout(int signo){timeout=true;} //CUando pasa la interrupcion
 
 void config_timeout(){signal(SIGALRM,sig_timeout);}
 
-void start_timeout_timer(int quantum){ualarm(quantum,0);}
-
 void start_timeout_timer(int quantum){
   timeout=false;
   ualarm(quantum,0);
 }
 
 gdouble fraction = 0.0;
-gdouble test = 0.0;
 gchar *display;
 
 double pi_approx_arcsen(Process *proc, Env_buf *scheduler_env){
-  char tmp[20] = "6";// BORRAR DESPUES
-  gdouble fraction = gtk_progress_bar_get_fraction (GTK_PROGRESS_BAR (progress_bar1));
-
+  // char tmp[20] = "6";// BORRAR DESPUES
+  // gdouble fraction; //= gtk_progress_bar_get_fraction (GTK_PROGRESS_BAR (progress_bar1));
 
   long double result = proc->result;
   long double coeff = proc->coeff;
@@ -85,24 +83,22 @@ double pi_approx_arcsen(Process *proc, Env_buf *scheduler_env){
     if(i%2==1){
       result+=coeff/i;
       coeff*=i;
-      //test = 1.0/end;
-      //display = g_strdup_printf("%d", i);
-      //gtk_label_set_text (GTK_LABEL(label), display);
-      //gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (progress_bar1), test*i);
-
     }else
       coeff/=i;
+
+//cada 500 terminos hace un print
+  if(i%500==0){
+    /*
+    printf("pid:%d, terms:%d ,approx:%0.10Lf\n",proc->pid,i,result); //Dif las barras
+    */
+    fraction = i/end;
+    display = g_strdup_printf("PI: %0.10Lf", result);
+    gtk_label_set_text (GTK_LABEL(labels[proc->pid]), display);
+    gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR(progress_bars[proc->pid]), fraction);
+  }
 /*
 Suspend
 */
-  if(i%500==0)//cada 500 terminos hace un print
-    //printf("pid:%d, terms:%d ,approx:%0.10Lf\n",proc->pid,i,result); //Dif las barras
-    test = 1.0/end;
-    display = g_strdup_printf("%d", i);
-    gtk_label_set_text (GTK_LABEL(label), display);
-    gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (progress_bar1), test*i);
-  // Se podria agregar q actualice la barra
-
   if(timeout){
     proc->indx_term=i+1;
     proc->result=result;
@@ -134,7 +130,7 @@ choose_winner(Lottery_task *lt){
 
 void
 update_arrival(
-    Lottery_task *not_ready_queue,                   // Preguntar a kaleb***********
+    Lottery_task *not_ready_queue,   // Preguntar a kaleb***********
     Lottery_task *ready_queue)
 {
   static time_t init_time = 0;
@@ -170,20 +166,31 @@ update_process_finished(
 
 int lottery_scheduler(Lottery_task *lt){
   int total_processes = g_list_length(lt->lst);
-  Lottery_task not_ready_queue = *lt;                                                //
-  Lottery_task ready_queue = {.lst=NULL, .quantum=lt->quantum, .total_tickets=0};    // se definen los estados de los procesos
-  Lottery_task finished_queue = {.lst=NULL, .quantum=lt->quantum, .total_tickets=0}; //
-  config_timeout();
-  while(g_list_length(finished_queue.lst)<total_processes){   //mientras no haya terminado con todos los procesos
+  // Se crean tres colas de procesos
+  // Q1: not_ready_queue, procesos con arrival_time>t_actual
+  // Q2: ready_queue, procesos con arrival_time<t_actual y en ejecución
+  // Q3: ready_queue, procesos finalizados
+  Lottery_task not_ready_queue = *lt;
+  Lottery_task ready_queue = {.lst=NULL, .quantum=lt->quantum, .total_tickets=0};
+  Lottery_task finished_queue = {.lst=NULL, .quantum=lt->quantum, .total_tickets=0};
+  config_timeout(); // Se indica rutina de manejo de timeout
+  //mientras no haya terminado con todos los procesos
+  while(g_list_length(finished_queue.lst)<total_processes){
+    // Aquí se empiza a ejecutar después del timeout
     Env_buf scheduler_env;
     sigsetjmp(scheduler_env,1);
+    // Actualizar listas de procesos de acuerdo a la llegada
     update_arrival(&not_ready_queue,&ready_queue);
     if(ready_queue.lst==NULL) continue;
+    // Jugar lotería para escoger proceso
     Process *pid_winner = choose_winner(&ready_queue);
     if(pid_winner!=NULL){
+      //iniciar timer de timeout
       start_timeout_timer(lt->quantum);
+      //Correr proceso
       pi_approx_arcsen(pid_winner,&scheduler_env);
-    }else continue;
+    }else // En caso que no hayan procesos por ejecutar se continua
+      continue;
     update_process_finished(&ready_queue,&finished_queue);
   }
   return 0;
@@ -224,7 +231,6 @@ void onButton (GtkButton *b){
   Lottery_task lt = create_lottery_task(NUM_PROCESSES);
   lottery_scheduler(&lt);
   free_lottery_task(&lt);
-  return 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -237,12 +243,15 @@ int main(int argc, char *argv[]) {
   g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
   gtk_builder_connect_signals(builder, NULL);
 
-// Hacer un arreglo progress_bars tomando en cuenta los labels
+// Recuperar acceso a los progress_bars y los textos asociados
   Gtk_Fixed = GTK_WIDGET(gtk_builder_get_object(builder, "GtkFixed"));
-  progress_bar1 = GTK_WIDGET(gtk_builder_get_object(builder, "process1"));
-  progress_bar2 = GTK_WIDGET(gtk_builder_get_object(builder, "process2"));
-  label = GTK_WIDGET(gtk_builder_get_object(builder, "label"));
-
+  for(int i=1;i<=MAX_NUMBER_PROCESSES;i++){
+    char name_progress_bar[32]; char name_label[32];
+    sprintf(name_progress_bar,"process%d",i);
+    sprintf(name_label,"label%d",i);
+    progress_bars[i]=GTK_WIDGET(gtk_builder_get_object(builder, name_progress_bar));
+    labels[i]=GTK_WIDGET(gtk_builder_get_object(builder, name_label));
+  }
   button = GTK_WIDGET(gtk_builder_get_object(builder, "button"));
   gtk_widget_show (window);
   gtk_main();
@@ -251,7 +260,4 @@ int main(int argc, char *argv[]) {
 }
 
 
-
-
-
-// gcc  Arcsen_func.c -o ArcSenProgram -lm -fsanitize=address -fno-omit-frame-pointer `pkg-config --cflags --libs glib-2.0` -g -Wall
+// gcc  Arcsen_func.c -o ArcSenProgram -lm -fsanitize=address -fno-omit-frame-pointer `pkg-config --cflags --libs glib-2.0` `pkg-config --cflags gtk+-3.0` `pkg-config --libs gtk+-3.0` -g -Wall
