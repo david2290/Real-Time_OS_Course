@@ -127,12 +127,13 @@ choose_winner(Lottery_task *lt){
   return p;
 }
 
+time_t init_time = 0;
 void
 update_arrival(
     Lottery_task *not_ready_queue,   // Preguntar a kaleb***********
     Lottery_task *ready_queue)
 {
-  static time_t init_time = 0;
+  //static time_t init_time = 0;
   if(init_time==0) init_time = time(NULL);
   time_t local_time = time(NULL);
   for(GList *l=not_ready_queue->lst; l!=NULL; l=l->next){
@@ -219,6 +220,10 @@ create_lottery_task(void){ //pasa el archivo
   //inicializar total_tickets
   lt.total_tickets=0;
   for(int i=0;i<processes_num;i++){
+
+    gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR(progress_bars[i]), 0);
+    gtk_label_set_text (GTK_LABEL(labels[i]), "");
+    g_main_context_iteration(NULL, TRUE);
     Process *p = g_new(Process,1);
     p->pid=i;
     //Tomar de archivo una línea
@@ -252,6 +257,7 @@ create_lottery_task(void){ //pasa el archivo
 
 // ejecutar main task
 void onButton (GtkButton *b){
+  init_time = 0;
   Lottery_task lt = create_lottery_task();
   lottery_scheduler(&lt);
   //free_lottery_task(&lt);
