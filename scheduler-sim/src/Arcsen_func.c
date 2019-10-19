@@ -16,7 +16,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#define NUM_PROCESSES 5  // CAmbiar por los procesos q estan en el archivo
+#define NUM_PROCESSES 15  // CAmbiar por los procesos q estan en el archivo
 #define MAX_NUMBER_PROCESSES 25
 //***************** GTK ***************************
 //gcc -Wno-format -o TestUI TestGladeINtegration.c -Wno-deprecated-declarations -Wno-format-security -lm `pkg-config --cflags --libs gtk+-3.0` -export-dynamic
@@ -71,10 +71,28 @@ void start_timeout_timer(int quantum){
 gdouble fraction = 0.0;
 gchar *display;
 
+
+typedef struct PrintStruct{
+  gdouble fraction;
+  gchar *display;
+  int pid;
+}PrintStruct;
+
+static gboolean
+update_widget (gpointer data )
+{
+  PrintStruct* ps = data;
+  gtk_label_set_text (GTK_LABEL(labels[ps->pid]), ps->display);
+  gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR(progress_bars[ps->pid]), ps->fraction);
+  g_free(ps->display);
+  g_free(ps);
+  return false;
+}
+
 double pi_approx_arcsen(Process *proc, Env_buf *scheduler_env){
   // char tmp[20] = "6";// BORRAR DESPUES
   // gdouble fraction; //= gtk_progress_bar_get_fraction (GTK_PROGRESS_BAR (progress_bar1));
-
+  PrintStruct* prtst = NULL;
   long double result = proc->result;
   long double coeff = proc->coeff;
   int end = proc->workload*50;
@@ -88,13 +106,12 @@ double pi_approx_arcsen(Process *proc, Env_buf *scheduler_env){
 
 //cada 500 terminos hace un print
   if(i%500==0){
-    /*
+    prtst = g_new(PrintStruct, 1);
+    prtst->fraction=i/end;
+    prtst->display = g_strdup_printf("PI: %0.10Lf", result);
+    prtst->pid = proc->pid;
+    g_main_context_invoke(NULL, update_widget, prtst);
     printf("pid:%d, terms:%d ,approx:%0.10Lf\n",proc->pid,i,result); //Dif las barras
-    */
-    fraction = i/end;
-    display = g_strdup_printf("PI: %0.10Lf", result);
-    gtk_label_set_text (GTK_LABEL(labels[proc->pid]), display);
-    gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR(progress_bars[proc->pid]), fraction);
   }
 /*
 Suspend
@@ -206,9 +223,9 @@ create_lottery_task(int number){ //pasa el archivo
   for(int i=0;i<NUM_PROCESSES;i++){
     Process *p = g_new(Process,1);
     p->pid=i;
-    p->workload=100;
+    p->workload=10000; //100
     p->tickets=100;
-    p->quantum=100;
+    p->quantum=2000; //100us
     p->arrival_time=1;
     p->coeff=2.0;
     p->result=0.0;
@@ -230,7 +247,7 @@ void free_lottery_task(Lottery_task* lt){
 void onButton (GtkButton *b){
   Lottery_task lt = create_lottery_task(NUM_PROCESSES);
   lottery_scheduler(&lt);
-  free_lottery_task(&lt);
+  //free_lottery_task(&lt);
 }
 
 int main(int argc, char *argv[]) {
@@ -249,9 +266,16 @@ int main(int argc, char *argv[]) {
     char name_progress_bar[32]; char name_label[32];
     sprintf(name_progress_bar,"process%d",i);
     sprintf(name_label,"label%d",i);
-    progress_bars[i]=GTK_WIDGET(gtk_builder_get_object(builder, name_progress_bar));
-    labels[i]=GTK_WIDGET(gtk_builder_get_object(builder, name_label));
+    printf("%s\n", name_progress_bar);
+    printf("%s\n", name_label);
+    progress_bars[i-1]=GTK_WIDGET(gtk_builder_get_object(builder, name_progress_bar));
+    labels[i-1]=GTK_WIDGET(gtk_builder_get_object(builder, name_label));
   }
+//
+//gtk_label_set_text (GTK_LABEL(labels[0]), "HOlamuchachos");
+//gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR(progress_bars[0]), fraction);
+//
+
   button = GTK_WIDGET(gtk_builder_get_object(builder, "button"));
   gtk_widget_show (window);
   gtk_main();
@@ -260,4 +284,4 @@ int main(int argc, char *argv[]) {
 }
 
 
-// gcc  Arcsen_func.c -o ArcSenProgram -lm -fsanitize=address -fno-omit-frame-pointer `pkg-config --cflags --libs glib-2.0` `pkg-config --cflags gtk+-3.0` `pkg-config --libs gtk+-3.0` -g -Wall
+// gcc  Arcsen_func.c -o ArcSenProgram -Wno-format -Wno-format -Wno-deprecated-declarations -Wno-format-security -lm -fsanitize=address -fno-omit-frame-pointer `pkg-config --cflags --libs glib-2.0` `pkg-config --cflags gtk+-3.0` `pkg-config --libs gtk+-3.0` -export-dynamic -g -Wall
