@@ -163,6 +163,28 @@ update_process_finished(
     }
 }
 
+int fsfc_scheduler(Lottery_task *lt){
+      int total_processes = g_list_length(lt->lst);
+      // Se crean tres colas de procesos
+      // Q1: not_ready_queue, procesos con arrival_time>t_actual
+      // Q2: ready_queue, procesos con arrival_time<t_actual y en ejecución
+      // Q3: ready_queue, procesos finalizados
+      Lottery_task not_ready_queue = *lt;
+      Lottery_task ready_queue = {.lst=NULL, .algorithm="", .quantum=lt->quantum, .total_tickets=0};
+      Lottery_task finished_queue = {.lst=NULL, .algorithm="", .quantum=lt->quantum, .total_tickets=0};
+      while(g_list_length(finished_queue.lst)<total_processes){
+        Env_buf scheduler_env;
+        sigsetjmp(scheduler_env,1);
+        update_arrival(&not_ready_queue,&ready_queue);
+        if(ready_queue.lst==NULL) continue;
+        // Jugar lotería para escoger proceso
+        Process *p=ready_queue.lst->data;
+        //Correr proceso
+        pi_approx_arcsen(p,&scheduler_env);
+        update_process_finished(&ready_queue,&finished_queue);
+      }
+      return 0;
+}
 
 int lottery_scheduler(Lottery_task *lt){
   int total_processes = g_list_length(lt->lst);
@@ -259,7 +281,10 @@ create_lottery_task(void){ //pasa el archivo
 void onButton (GtkButton *b){
   init_time = 0;
   Lottery_task lt = create_lottery_task();
-  lottery_scheduler(&lt);
+  if(strcmp(lt.algorithm,"lottery")==0)
+    lottery_scheduler(&lt);
+  else
+    fsfc_scheduler(&lt);
   //free_lottery_task(&lt);
 }
 
