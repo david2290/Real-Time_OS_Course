@@ -16,28 +16,22 @@
 #include <string.h>
 #include <ctype.h>
 
-#define NUM_PROCESSES 15  // CAmbiar por los procesos q estan en el archivo
+#define NUM_PROCESSES 15
 #define MAX_NUMBER_PROCESSES 25
 //***************** GTK ***************************
 //gcc -Wno-format -o TestUI TestGladeINtegration.c -Wno-deprecated-declarations -Wno-format-security -lm `pkg-config --cflags --libs gtk+-3.0` -export-dynamic
 
 GtkWidget     *window;
 GtkWidget     *Gtk_Fixed;
-GtkWidget     *progress_bar1;
-GtkWidget     *progress_bars[25]; // OJO
-GtkWidget     *progress_bar2;
+GtkWidget     *progress_bars[25];
 GtkWidget     *button;
-GtkWidget     *label;
-GtkWidget     *labels[25];        // OJO
-
+GtkWidget     *labels[25];
 GtkBuilder    *builder;
-
-
 
 
 typedef sigjmp_buf Env_buf;   // para guardar el contexto
 
-typedef struct Process{   //
+typedef struct Process{
   Env_buf env;
   int pid;
   int workload;
@@ -68,11 +62,6 @@ void start_timeout_timer(int quantum){
   ualarm(quantum,0);
 }
 
-gdouble fraction = 0.0;
-gchar *display;
-
-
-
 double pi_approx_arcsen(Process *proc, Env_buf *scheduler_env){
   // char tmp[20] = "6";// BORRAR DESPUES
   // gdouble fraction; //= gtk_progress_bar_get_fraction (GTK_PROGRESS_BAR (progress_bar1));
@@ -93,13 +82,13 @@ double pi_approx_arcsen(Process *proc, Env_buf *scheduler_env){
 
     printf("pid:%d, terms:%d ,approx:%0.10Lf\n",proc->pid,i,result); //Dif las barras
 
-    fraction = (1.0/end)*i;
-    display = g_strdup_printf("PI: %0.10Lf", result);
+    gdouble fraction = (1.0/end)*i;
+    gchar *display = g_strdup_printf("PI: %0.10Lf", result);
 
     gtk_label_set_text (GTK_LABEL(labels[proc->pid]), display);
     gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR(progress_bars[proc->pid]), fraction);
-
     g_main_context_iteration(NULL, TRUE);
+    g_free(display);
   }
 /*
 Suspend
@@ -226,16 +215,15 @@ create_lottery_task(int number){ //pasa el archivo
 }
 
 void free_lottery_task(Lottery_task* lt){
-  g_list_free_full(lt->lst,g_free);
+  g_list_free(lt->lst);
 }
 
 
-
-// tRIGGER PARA INICIAR LOS PROCESOS
+// ejecutar main task
 void onButton (GtkButton *b){
   Lottery_task lt = create_lottery_task(NUM_PROCESSES);
   lottery_scheduler(&lt);
-  //free_lottery_task(&lt);
+  free_lottery_task(&lt);
 }
 
 int main(int argc, char *argv[]) {
@@ -259,11 +247,6 @@ int main(int argc, char *argv[]) {
     progress_bars[i-1]=GTK_WIDGET(gtk_builder_get_object(builder, name_progress_bar));
     labels[i-1]=GTK_WIDGET(gtk_builder_get_object(builder, name_label));
   }
-//
-//gtk_label_set_text (GTK_LABEL(labels[0]), "HOlamuchachos");
-//gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR(progress_bars[0]), fraction);
-//
-
   button = GTK_WIDGET(gtk_builder_get_object(builder, "button"));
   gtk_widget_show (window);
   gtk_main();
