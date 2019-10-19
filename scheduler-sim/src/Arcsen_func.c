@@ -72,27 +72,11 @@ gdouble fraction = 0.0;
 gchar *display;
 
 
-typedef struct PrintStruct{
-  gdouble fraction;
-  gchar *display;
-  int pid;
-}PrintStruct;
-
-static gboolean
-update_widget (gpointer data )
-{
-  PrintStruct* ps = data;
-  gtk_label_set_text (GTK_LABEL(labels[ps->pid]), ps->display);
-  gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR(progress_bars[ps->pid]), ps->fraction);
-  g_free(ps->display);
-  g_free(ps);
-  return false;
-}
 
 double pi_approx_arcsen(Process *proc, Env_buf *scheduler_env){
   // char tmp[20] = "6";// BORRAR DESPUES
   // gdouble fraction; //= gtk_progress_bar_get_fraction (GTK_PROGRESS_BAR (progress_bar1));
-  PrintStruct* prtst = NULL;
+
   long double result = proc->result;
   long double coeff = proc->coeff;
   int end = proc->workload*50;
@@ -106,12 +90,16 @@ double pi_approx_arcsen(Process *proc, Env_buf *scheduler_env){
 
 //cada 500 terminos hace un print
   if(i%500==0){
-    prtst = g_new(PrintStruct, 1);
-    prtst->fraction=i/end;
-    prtst->display = g_strdup_printf("PI: %0.10Lf", result);
-    prtst->pid = proc->pid;
-    g_main_context_invoke(NULL, update_widget, prtst);
+
     printf("pid:%d, terms:%d ,approx:%0.10Lf\n",proc->pid,i,result); //Dif las barras
+
+    fraction = (1.0/end)*i;
+    display = g_strdup_printf("PI: %0.10Lf", result);
+
+    gtk_label_set_text (GTK_LABEL(labels[proc->pid]), display);
+    gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR(progress_bars[proc->pid]), fraction);
+
+    g_main_context_iteration(NULL, TRUE);
   }
 /*
 Suspend
