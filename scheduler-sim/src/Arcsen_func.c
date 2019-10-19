@@ -36,11 +36,11 @@ typedef struct Process{
   int pid;
   int workload;
   int tickets;
-  int quantum;
   int arrival_time;
   bool finished;
   long double coeff;
   long double result;
+
   int indx_term;
 }Process;
 
@@ -49,6 +49,7 @@ typedef struct Lottery_task{
   GList *lst;
   int quantum;
   int total_tickets;
+  char algorithm[16];
 }Lottery_task;
 
 static bool timeout = false;
@@ -169,8 +170,8 @@ int lottery_scheduler(Lottery_task *lt){
   // Q2: ready_queue, procesos con arrival_time<t_actual y en ejecución
   // Q3: ready_queue, procesos finalizados
   Lottery_task not_ready_queue = *lt;
-  Lottery_task ready_queue = {.lst=NULL, .quantum=lt->quantum, .total_tickets=0};
-  Lottery_task finished_queue = {.lst=NULL, .quantum=lt->quantum, .total_tickets=0};
+  Lottery_task ready_queue = {.lst=NULL, .algorithm="", .quantum=lt->quantum, .total_tickets=0};
+  Lottery_task finished_queue = {.lst=NULL, .algorithm="", .quantum=lt->quantum, .total_tickets=0};
   config_timeout(); // Se indica rutina de manejo de timeout
   //mientras no haya terminado con todos los procesos
   while(g_list_length(finished_queue.lst)<total_processes){
@@ -194,20 +195,44 @@ int lottery_scheduler(Lottery_task *lt){
   return 0;
 }
 
+
+
 Lottery_task
-create_lottery_task(int number){ //pasa el archivo
+create_lottery_task(void){ //pasa el archivo
+  srand(time(0)); //iniciar random seed
   Lottery_task lt;
   lt.lst=NULL;
-  lt.quantum=100;
-  srand(time(0));
+  FILE *fp = fopen("sample.csv", "r");
+  char *line = NULL;char *token;size_t len = 0;
+  //Tomar algoritmo
+  getline(&line, &len, fp);
+  token=strtok(line,"\n");
+  strcpy(lt.algorithm,token);
+  //Tomar quantum
+  getline(&line, &len, fp);
+  token=strtok(line,"\n");
+  lt.quantum = atoi(token);
+  //Tomar cantidad de procesos
+  getline(&line, &len, fp);
+  token=strtok(line,"\n");
+  int processes_num = atoi(token);
+  //inicializar total_tickets
   lt.total_tickets=0;
-  for(int i=0;i<NUM_PROCESSES;i++){
+  for(int i=0;i<processes_num;i++){
     Process *p = g_new(Process,1);
     p->pid=i;
-    p->workload=10000; //100
-    p->tickets=100;
-    p->quantum=2000; //100us
-    p->arrival_time=1;
+    //Tomar de archivo una línea
+    getline(&line, &len, fp);
+    //workload
+    token=strtok(line,",");
+    p->workload=atoi(token);
+    //arrival_time
+    token=strtok(NULL,",");
+    p->arrival_time=atoi(token);
+    //tickets
+    token=strtok(NULL,",");
+    p->tickets=atoi(token);
+    //Inicio de taylor
     p->coeff=2.0;
     p->result=0.0;
     p->finished=false;
@@ -215,6 +240,8 @@ create_lottery_task(int number){ //pasa el archivo
     lt.lst=g_list_append(lt.lst,(gpointer) p); // apend de una lista de procesos
     lt.total_tickets+=p->tickets;
   }
+  fclose(fp);
+  free(line);
   return lt;
 }
 
@@ -225,7 +252,7 @@ create_lottery_task(int number){ //pasa el archivo
 
 // ejecutar main task
 void onButton (GtkButton *b){
-  Lottery_task lt = create_lottery_task(NUM_PROCESSES);
+  Lottery_task lt = create_lottery_task();
   lottery_scheduler(&lt);
   //free_lottery_task(&lt);
 }
