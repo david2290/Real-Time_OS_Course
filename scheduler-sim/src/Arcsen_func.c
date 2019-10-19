@@ -87,6 +87,10 @@ double pi_approx_arcsen(Process *proc, Env_buf *scheduler_env){
 
     gtk_label_set_text (GTK_LABEL(labels[proc->pid]), display);
     gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR(progress_bars[proc->pid]), fraction);
+// Se Habilita el proceso que vaya a estar ejecutando
+    gtk_widget_show(progress_bars[proc->pid]);////
+    gtk_widget_show(labels[proc->pid]);
+
     g_main_context_iteration(NULL, TRUE);
     g_free(display);
   }
@@ -246,6 +250,9 @@ int main(int argc, char *argv[]) {
     printf("%s\n", name_label);
     progress_bars[i-1]=GTK_WIDGET(gtk_builder_get_object(builder, name_progress_bar));
     labels[i-1]=GTK_WIDGET(gtk_builder_get_object(builder, name_label));
+    gtk_widget_hide(progress_bars[i-1]);
+    gtk_widget_hide(labels[i-1]);
+//gtk_widget_show()
   }
   button = GTK_WIDGET(gtk_builder_get_object(builder, "button"));
   gtk_widget_show (window);
