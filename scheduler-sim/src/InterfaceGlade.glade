@@ -10,7 +10,7 @@
         <property name="can_focus">False</property>
         <child>
           <object class="GtkButton" id="button">
-            <property name="label" translatable="yes">Click me</property>
+            <property name="label" translatable="yes">Iniciar</property>
             <property name="width_request">118</property>
             <property name="height_request">46</property>
             <property name="visible">True</property>
@@ -19,8 +19,8 @@
             <signal name="clicked" handler="onButton" swapped="no"/>
           </object>
           <packing>
-            <property name="x">257</property>
-            <property name="y">921</property>
+            <property name="x">216</property>
+            <property name="y">885</property>
           </packing>
         </child>
         <child>
@@ -45,7 +45,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="orientation">vertical</property>
-                    <property name="spacing">7</property>
+                    <property name="spacing">8</property>
                     <child>
                       <object class="GtkProgressBar" id="process1">
                         <property name="name">ProgBar1</property>
@@ -317,6 +317,7 @@
                       <object class="GtkProgressBar" id="process23">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="show_text">True</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -328,6 +329,7 @@
                       <object class="GtkProgressBar" id="process24">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="show_text">True</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -339,6 +341,7 @@
                       <object class="GtkProgressBar" id="process25">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="show_text">True</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -374,6 +377,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="orientation">vertical</property>
+                    <property name="spacing">6</property>
                     <child>
                       <object class="GtkLabel" id="label1">
                         <property name="height_request">33</property>
@@ -384,7 +388,6 @@
                       <packing>
                         <property name="expand">False</property>
                         <property name="fill">True</property>
-                        <property name="pack_type">end</property>
                         <property name="position">0</property>
                       </packing>
                     </child>

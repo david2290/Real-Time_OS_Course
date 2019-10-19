@@ -214,16 +214,16 @@ create_lottery_task(int number){ //pasa el archivo
   return lt;
 }
 
-void free_lottery_task(Lottery_task* lt){
-  g_list_free(lt->lst);
-}
+//void free_lottery_task(Lottery_task* lt){
+  //g_list_free(lt->lst);
+//}
 
 
 // ejecutar main task
 void onButton (GtkButton *b){
   Lottery_task lt = create_lottery_task(NUM_PROCESSES);
   lottery_scheduler(&lt);
-  free_lottery_task(&lt);
+  //free_lottery_task(&lt);
 }
 
 int main(int argc, char *argv[]) {
