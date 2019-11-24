@@ -7,7 +7,28 @@ typedef struct Process{
 	int period_time;
 } Process;
 
-int realTimeCapacity[2][100];
+void createSystemFromFile(GArray *);
+int calc_greatest_common_multiple(int,int);
+int calc_least_common_multiple(GArray *);
+int RM_policy(GArray *, int);
+void refresh_deadlines_accordingly(GArray *, GArray *);
+bool found_schedule_error(GArray *);
+void print_schedule_step_output(GArray *, int, int);
+void schedule(GArray *);
+float calc_cpu_utilization(GArray *);
+
+int main(){
+	GArray *readyQueue = g_array_new (FALSE, FALSE, sizeof(Process));
+    createSystemFromFile(readyQueue);
+	float utilization = calc_cpu_utilization(readyQueue);
+	if(utilization>1)
+		printf("\nthis system isn't schedulable because\nthe sum of Ei/Pi = %f > 1\n",utilization);
+	else
+	    schedule(readyQueue);
+	printf("End of the simulation\n");
+	g_array_free(readyQueue, TRUE);
+}
+
 void createSystemFromFile(GArray *readyQueue){
     FILE *InputFile = fopen("sys.txt", "r");
 	int processesNumber = 0;
@@ -110,22 +131,6 @@ float calc_cpu_utilization(GArray *readyQueue){
 	}
 	float utilization = utilization_acc;
 	return utilization;
-}
-
-int main(){
-	GArray *readyQueue = g_array_new (FALSE, FALSE, sizeof(Process));
-    int x,help[100];
-    createSystemFromFile(readyQueue);
-    //schedulability...
-	float utilization = calc_cpu_utilization(readyQueue);
-	if(utilization>1){
-		printf("\nthis system isn't schedulable because\nthe sum of Ei/Pi = %f > 1\n",utilization);
-	}
-	else{
-	    schedule(readyQueue);
-	}
-	printf("End of the simulation\n");
-	g_array_free(readyQueue, TRUE);
 }
 
 // gcc RateMonot.c -o RMA `pkg-config --cflags --libs glib-2.0` `pkg-config --cflags gtk+-3.0` `pkg-config --libs gtk+-3.0`
