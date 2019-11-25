@@ -7,24 +7,30 @@ typedef struct Process{
 	int period_time;
 } Process;
 
+typedef int (*Policy)(GArray*, GArray*, int);
+
 void createSystemFromFile(GArray *);
 int calc_greatest_common_multiple(int,int);
 int calc_least_common_multiple(GArray *);
 int RM_policy(GArray *, GArray *, int);
+int EDF_policy(GArray *, GArray *, int);
+int LLS_policy(GArray *, GArray *, int);
 void refresh_deadlines_accordingly(GArray *, GArray *);
 bool found_schedule_error(GArray *);
 void print_schedule_step_output(GArray *, int, int);
-void schedule(GArray *);
+void schedule(GArray *,Policy);
 float calc_cpu_utilization(GArray *);
+
 
 int main(){
 	GArray *readyQueue = g_array_new (FALSE, FALSE, sizeof(Process));
     createSystemFromFile(readyQueue);
 	float utilization = calc_cpu_utilization(readyQueue);
+	Policy schedulable_policy = LLS_policy;
 	if(utilization>1)
 		printf("\nthis system isn't schedulable because\nthe sum of Ei/Pi = %f > 1\n",utilization);
 	else
-	    schedule(readyQueue);
+	    schedule(readyQueue,schedulable_policy);
 	printf("\n");
 	g_array_free(readyQueue, TRUE);
 }
@@ -60,36 +66,49 @@ int calc_least_common_multiple(GArray *readyQueue){
 int RM_policy(GArray *simulationState, GArray *readyQueue, int lcm){
     // this function returns the id of the prior process and returns -1 if no process is ready to execute
 	const int numberOfProcesses = (*simulationState).len;
-    int prior = -1, lessPeriode = lcm;
+    int choosen_task = -1, smallerPeriod = lcm;
     for(int i=0; i<numberOfProcesses; i++){
 		int compute_time = g_array_index(simulationState,Process,i).compute_time;
 		int period_time = g_array_index(readyQueue,Process,i).period_time;
-		if(compute_time > 0){
-			if(lessPeriode >= period_time){
-				prior = i;
-				lessPeriode = period_time;
-			}
+		if(compute_time > 0 && smallerPeriod >= period_time){
+			choosen_task = i;
+			smallerPeriod = period_time;
 		}
     }
-    return prior;
+    return choosen_task;
 }
 
-int EDF_policy(GArray *simulationState, int lcm){
+int EDF_policy(GArray *simulationState, GArray *readyQueue, int lcm){
     // this function returns the id of the prior process and returns -1 if no process is ready to execute
 	const int numberOfProcesses = (*simulationState).len;
-    int prior = -1, lessPeriode = lcm;
+    int choosen_task = -1, smallerDeadline = lcm;
     for(int i=0; i<numberOfProcesses; i++){
 		int compute_time = g_array_index(simulationState,Process,i).compute_time;
 		int period_time = g_array_index(simulationState,Process,i).period_time;
-		if(compute_time > 0){
-			if(lessPeriode >= period_time){
-				prior = i;
-				lessPeriode = period_time;
-			}
+		if(compute_time > 0 && smallerDeadline >= period_time){
+			choosen_task = i;
+			smallerDeadline = period_time;
 		}
     }
-    return prior;
+    return choosen_task;
 }
+
+int LLS_policy(GArray *simulationState, GArray *readyQueue, int lcm){
+    // this function returns the id of the prior process and returns -1 if no process is ready to execute
+	const int numberOfProcesses = (*simulationState).len;
+    int choosen_task = -1, smallerLaxity = lcm;
+    for(int i=0; i<numberOfProcesses; i++){
+		int compute_time = g_array_index(simulationState,Process,i).compute_time;
+		int period_time = g_array_index(simulationState,Process,i).period_time;
+		int laxity = period_time - compute_time;
+		if(compute_time > 0 && smallerLaxity >= laxity){
+			choosen_task = i;
+			smallerLaxity = laxity;
+		}
+    }
+    return choosen_task;
+}
+
 
 void refresh_deadlines_accordingly(GArray *simulationState, GArray *readyQueue){
 	for(int i=0; i<(*simulationState).len; i++){
@@ -124,7 +143,7 @@ void print_schedule_step_output(GArray *simulationState, int running_process_ind
 	}
 }
 
-void schedule(GArray *readyQueue){
+void schedule(GArray *readyQueue, Policy schedule_policy){
 	int numberOfProcesses = (*readyQueue).len;
 	int lcm = calc_least_common_multiple(readyQueue);
 	GArray *simulationState = g_array_new(FALSE,FALSE,sizeof(Process));
@@ -132,7 +151,7 @@ void schedule(GArray *readyQueue){
 	int running_process_index;
     for(int t=0; t<lcm; t++){
 		if(found_schedule_error(simulationState)) return;
-		running_process_index = RM_policy(simulationState,readyQueue,lcm);
+		running_process_index = schedule_policy(simulationState,readyQueue,lcm);
 		print_schedule_step_output(simulationState,running_process_index,t);
 		refresh_deadlines_accordingly(simulationState,readyQueue);
 	}
