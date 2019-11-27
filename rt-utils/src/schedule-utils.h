@@ -15,7 +15,7 @@ typedef struct SC_SimTrace{
 
 typedef int (*SC_Policy)(GArray*, GArray*, int);
 
-void SC_createSystemFromFile(GArray *);
+//void SC_createSystemFromFile(GArray *);
 int SC_calc_greatest_common_multiple(int,int);
 int SC_calc_least_common_multiple(GArray *);
 int SC_RM_policy(GArray *, GArray *, int);

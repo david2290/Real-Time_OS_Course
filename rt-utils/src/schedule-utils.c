@@ -3,17 +3,7 @@
 #include<gmodule.h>
 #include "schedule-utils.h"
 
-void SC_createSystemFromFile(GArray *readyQueue){
-    FILE *InputFile = fopen("sys.txt", "r");
-	while(!feof(InputFile)){
-		SC_Process readProcess={0,0};
-        fscanf(InputFile, "%d %d",
-			&readProcess.compute_time,
-			&readProcess.period_time);
-		if(readProcess.period_time>0)
-			g_array_append_val(readyQueue, readProcess);
-    }
-}
+
 
 int SC_calc_greatest_common_multiple(int a,int b){
 	if (b == 0) return a;
