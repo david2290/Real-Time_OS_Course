@@ -109,6 +109,7 @@ void SC_run_step(GArray *simulationState, int running_process_index, int t, SC_S
 
 void SC_schedule(GArray *readyQueue, SC_Policy schedule_policy, SC_SimTrace* struct_trace_ptr){
 	int lcm = SC_calc_least_common_multiple(readyQueue);
+	printf("lcm: %d  \n",lcm);
 	GArray *simulationState = g_array_new(FALSE,FALSE,sizeof(SC_Process));
 	g_array_append_vals(simulationState,readyQueue->data,readyQueue->len);
 	int running_process_index;
@@ -124,7 +125,7 @@ void SC_schedule(GArray *readyQueue, SC_Policy schedule_policy, SC_SimTrace* str
 
 float SC_calc_cpu_utilization(GArray *readyQueue){
 	double utilization_acc=0.0f;
-	int numberOfProcesses = (*readyQueue).len;
+	int numberOfProcesses = readyQueue->len;
 	for(int i=0; i < numberOfProcesses; i++){
 		double compute_time = g_array_index(readyQueue,SC_Process,i).compute_time;
 		double period_time = g_array_index(readyQueue,SC_Process,i).period_time;
