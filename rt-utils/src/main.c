@@ -49,6 +49,9 @@ GtkWidget     *label6;
 GtkWidget     *TotalTask;
 GtkWidget     *Enter;
 GtkBuilder    *builder;
+//gboolean Display = gtk_switch_get_active(GTK_SWITCH(SwDisplay1));
+
+gdouble        totalTask;
 
 void SC_createSystemFromFile(GArray *readyQueue){
     FILE *InputFile = fopen("sys.txt", "r");
@@ -106,7 +109,7 @@ void run_simulation(SC_SimTrace *struct_trace_ptr, SC_Policy schedulable_policy)
 // Ejecutar main task
 
 void on_Enter_clicked (GtkButton *c){
-	gdouble totalTask = gtk_spin_button_get_value (GTK_SPIN_BUTTON(TotalTask)); 
+	totalTask = gtk_spin_button_get_value (GTK_SPIN_BUTTON(TotalTask)); 
 	if (totalTask==1.0) {gtk_widget_show(label1); gtk_widget_show(compute1); gtk_widget_show(period1);
 	gtk_widget_hide(label2); gtk_widget_hide(compute2); gtk_widget_hide(period2);
 	gtk_widget_hide(label3); gtk_widget_hide(compute3); gtk_widget_hide(period3);
@@ -163,19 +166,47 @@ void on_button1_clicked (GtkButton *b){
 
 	gboolean RM = gtk_switch_get_active(GTK_SWITCH(SwEnable1)); // 
  	gboolean EDF = gtk_switch_get_active(GTK_SWITCH(SwEnable2)); // 
- 	gboolean LLF = gtk_switch_get_active(GTK_SWITCH(SwEnable3)); //
- 	gboolean Display = gtk_switch_get_active(GTK_SWITCH(SwDisplay1)); //
+ 	gboolean LLF = gtk_switch_get_active(GTK_SWITCH(SwEnable3)); 
+ 	gboolean Display = gtk_switch_get_active(GTK_SWITCH(SwDisplay1)); //False=Default-> All together, True-> Single slide  
 	FILE *out_file = fopen("sys.txt", "w"); // write only
         // write to file vs write to screen
-	for(int i=0;i<2;i++){	//FALTA hacerlo dinamico
+	for(int i=0;i<totalTask;i++){	//FALTA hacerlo dinamico
 		fprintf(out_file, "%d %d\n", (int)Compute[i], (int)Period[i]); // write to file
 	}
 	fclose(out_file);
-
+	//it is needed to perform array of traces
 	SC_SimTrace sim_trace = {NULL, false, 0, 1};
 	sim_trace.trace = g_array_new(FALSE,FALSE,sizeof(int));
-	SC_Policy schedulable_policy = SC_RM_policy;
-	run_simulation(&sim_trace,schedulable_policy);
+	SC_Policy schedulable_policy_RM = SC_RM_policy;
+	SC_Policy schedulable_policy_EDF = SC_EDF_policy;
+	SC_Policy schedulable_policy_LLS = SC_LLS_policy;
+	if (RM && !EDF && !LLF) {
+		run_simulation(&sim_trace,schedulable_policy_RM);
+		}
+	if (EDF && !RM && !LLF) {
+		run_simulation(&sim_trace,schedulable_policy_EDF);
+		}
+	if (LLF && !EDF && !RM) {
+		run_simulation(&sim_trace,schedulable_policy_EDF);
+		}
+	if (RM && EDF && !LLF) {
+		run_simulation(&sim_trace,schedulable_policy_RM);
+		run_simulation(&sim_trace,schedulable_policy_EDF);
+		}
+	if (EDF && !RM && LLF) {
+		run_simulation(&sim_trace,schedulable_policy_EDF);
+		run_simulation(&sim_trace,schedulable_policy_LLS);
+		}
+	if (LLF && !EDF && RM) {
+		run_simulation(&sim_trace,schedulable_policy_RM);
+		run_simulation(&sim_trace,schedulable_policy_LLS);
+		}
+	if (LLF && EDF && RM) {
+		run_simulation(&sim_trace,schedulable_policy_EDF);
+		run_simulation(&sim_trace,schedulable_policy_RM);
+		run_simulation(&sim_trace,schedulable_policy_LLS);
+		}
+
 	print_trace(&sim_trace);
 	g_array_free(sim_trace.trace,TRUE);
 }
@@ -189,7 +220,7 @@ int main(int argc, char** argv){
         window = GTK_WIDGET(gtk_builder_get_object(builder, "window"));
         g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
         gtk_builder_connect_signals(builder, NULL);
-
+	
         //get pointers to widgets in the window
         Gtk_Fixed = GTK_WIDGET(gtk_builder_get_object(builder, "fixed1"));
         label1 = GTK_WIDGET(gtk_builder_get_object(builder, "label1"));
@@ -223,6 +254,7 @@ int main(int argc, char** argv){
         button1 = GTK_WIDGET(gtk_builder_get_object(builder, "button1"));
 	TotalTask = GTK_WIDGET(gtk_builder_get_object(builder, "TotalTask"));
 	Enter = GTK_WIDGET(gtk_builder_get_object(builder, "Enter"));
+	totalTask=0.0;
 	gtk_widget_hide(label1); gtk_widget_hide(compute1); gtk_widget_hide(period1);
 	gtk_widget_hide(label2); gtk_widget_hide(compute2); gtk_widget_hide(period2);
 	gtk_widget_hide(label3); gtk_widget_hide(compute3); gtk_widget_hide(period3);
