@@ -106,11 +106,8 @@ void run_simulation(SC_SimTrace *struct_trace_ptr, SC_Policy schedulable_policy)
 // Ejecutar main task
 
 void on_Enter_clicked (GtkButton *c){
-	printf ("aqui");
 	gdouble totalTask = gtk_spin_button_get_value (GTK_SPIN_BUTTON(TotalTask)); 
-printf ("aqui");
 	if (totalTask==1.0) {gtk_widget_show(label1); gtk_widget_show(compute1); gtk_widget_show(period1);
-printf ("aqui1");
 	gtk_widget_hide(label2); gtk_widget_hide(compute2); gtk_widget_hide(period2);
 	gtk_widget_hide(label3); gtk_widget_hide(compute3); gtk_widget_hide(period3);
 	gtk_widget_hide(label4); gtk_widget_hide(compute4); gtk_widget_hide(period4);
@@ -150,25 +147,31 @@ printf ("aqui1");
 }
 
 void on_button1_clicked (GtkButton *b){
-
-	gdouble Compute1 = gtk_spin_button_get_value (GTK_SPIN_BUTTON(compute1)); //
-	gdouble Compute2 = gtk_spin_button_get_value (GTK_SPIN_BUTTON(compute2)); //
-	gdouble Compute3 = gtk_spin_button_get_value (GTK_SPIN_BUTTON(compute3)); //
-	gdouble Compute4 = gtk_spin_button_get_value (GTK_SPIN_BUTTON(compute4)); //
-	gdouble Compute5 = gtk_spin_button_get_value (GTK_SPIN_BUTTON(compute5)); //
-	gdouble Compute6 = gtk_spin_button_get_value (GTK_SPIN_BUTTON(compute6)); //
-	gdouble Period1 = gtk_spin_button_get_value (GTK_SPIN_BUTTON(period1)); // 
-	gdouble Period2 = gtk_spin_button_get_value (GTK_SPIN_BUTTON(period2)); //
-	gdouble Period3 = gtk_spin_button_get_value (GTK_SPIN_BUTTON(period3)); //
-	gdouble Period4 = gtk_spin_button_get_value (GTK_SPIN_BUTTON(period4)); //
-	gdouble Period5 = gtk_spin_button_get_value (GTK_SPIN_BUTTON(period5)); //
-	gdouble Period6 = gtk_spin_button_get_value (GTK_SPIN_BUTTON(period6)); //
+	gdouble Compute[6]; gdouble Period[6];
+	Compute[0] = gtk_spin_button_get_value (GTK_SPIN_BUTTON(compute1)); //
+	Compute[1] = gtk_spin_button_get_value (GTK_SPIN_BUTTON(compute2)); //
+	Compute[2] = gtk_spin_button_get_value (GTK_SPIN_BUTTON(compute3)); //
+	Compute[3] = gtk_spin_button_get_value (GTK_SPIN_BUTTON(compute4)); //
+	Compute[4] = gtk_spin_button_get_value (GTK_SPIN_BUTTON(compute5)); //
+	Compute[5] = gtk_spin_button_get_value (GTK_SPIN_BUTTON(compute6)); //
+	Period[0] = gtk_spin_button_get_value (GTK_SPIN_BUTTON(period1)); // 
+	Period[1] = gtk_spin_button_get_value (GTK_SPIN_BUTTON(period2)); //
+	Period[2] = gtk_spin_button_get_value (GTK_SPIN_BUTTON(period3)); //
+	Period[3] = gtk_spin_button_get_value (GTK_SPIN_BUTTON(period4)); //
+	Period[4] = gtk_spin_button_get_value (GTK_SPIN_BUTTON(period5)); //
+	Period[5] = gtk_spin_button_get_value (GTK_SPIN_BUTTON(period6)); //
 
 	gboolean RM = gtk_switch_get_active(GTK_SWITCH(SwEnable1)); // 
  	gboolean EDF = gtk_switch_get_active(GTK_SWITCH(SwEnable2)); // 
  	gboolean LLF = gtk_switch_get_active(GTK_SWITCH(SwEnable3)); //
  	gboolean Display = gtk_switch_get_active(GTK_SWITCH(SwDisplay1)); //
-	
+	FILE *out_file = fopen("sys.txt", "w"); // write only
+        // write to file vs write to screen
+	for(int i=0;i<2;i++){	//FALTA hacerlo dinamico
+		fprintf(out_file, "%d %d\n", (int)Compute[i], (int)Period[i]); // write to file
+	}
+	fclose(out_file);
+
 	SC_SimTrace sim_trace = {NULL, false, 0, 1};
 	sim_trace.trace = g_array_new(FALSE,FALSE,sizeof(int));
 	SC_Policy schedulable_policy = SC_RM_policy;
