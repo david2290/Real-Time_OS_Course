@@ -4,12 +4,20 @@ void RT_create_template_file();
 void RT_print_trace(GArray *, FILE* f);
 void RT_export_pdf();
 void RT_open_window();
+void RT_latex_frame_title_string(FILE *, int);
+void RT_latex_frame_algorithm_info(FILE*,int,float);
+void RT_latex_packages(FILE*);
+void RT_latex_author_info(FILE *);
+void RT_latex_first_frames(GArray *, FILE*);
+void RT_latex_title_string(FILE *, int, int);
+void RT_latex_ganttbar_from_trace(SC_SimTrace *, FILE* , int);
+void RT_latex_simulation_frame_per_algorithm(SC_SimTrace *, FILE*);
+void RT_print_trace(GArray *, FILE*);
 
 
 FILE* RT_create_file_buffer(){
 	return fopen(FILE_NAME".tex","w");
 }
-
 
 void RT_latex_frame_title_string(FILE *f, int policy_id){
 	switch (policy_id) {
@@ -103,9 +111,10 @@ void RT_latex_ganttbar_from_trace(SC_SimTrace *struct_trace_ptr, FILE* f, int st
 		int next_task_runnning = g_array_index(trace,int, i);
 		if(task_runnning!=next_task_runnning){
 			if(task_runnning!=-1){
-				t_end=i;
+				t_begin=(t_begin%40==0)?40:t_begin%40;
+				t_end=(i%40==0)?40:i%40;
 				char* updated_msg=g_strdup_printf("%s\\ganttbar[bar/.append style={fill=pink}]{Task %d}{%d}{%d} ",
-					vector_string[task_runnning],task_runnning,t_begin%40,t_end%40);
+					vector_string[task_runnning],task_runnning,t_begin,t_end);
 				g_free(vector_string[task_runnning]);
 				vector_string[task_runnning] = updated_msg;
 			}
@@ -115,9 +124,10 @@ void RT_latex_ganttbar_from_trace(SC_SimTrace *struct_trace_ptr, FILE* f, int st
 	}
 
 	if(task_runnning!=-1){
-		t_end=t_steps;
+		t_end= (t_steps%40==0)?40:t_steps%40;
+		t_begin=(t_begin%40==0)?40:t_begin%40;
 		char* updated_msg = g_strdup_printf("%s\\ganttbar[bar/.append style={fill=pink}]{Task %d}{%d}{%d} ",
-			vector_string[task_runnning],task_runnning,t_begin%40,t_end%40);
+			vector_string[task_runnning],task_runnning,t_begin,t_end);
 		g_free(vector_string[task_runnning]);
 		vector_string[task_runnning] = updated_msg;
 	}
@@ -136,8 +146,6 @@ void RT_latex_ganttbar_from_trace(SC_SimTrace *struct_trace_ptr, FILE* f, int st
 	}
 	g_free(vector_string);
 }
-
-
 
 void RT_latex_simulation_frame_per_algorithm(SC_SimTrace *struct_trace_ptr, FILE* f){
 	int number_of_frames = (struct_trace_ptr->trace->len / (40*3))+1;
