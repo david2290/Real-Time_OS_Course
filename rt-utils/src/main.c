@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "latex_tools.h"
 #include "schedule-utils.h"
+#include "latex_tools.h"
 //
 #include <stdlib.h>
 #include <sys/types.h>
@@ -12,7 +12,6 @@
 #include <gtk/gtkx.h>
 #include <math.h>
 #include <ctype.h>
-
 //***************** GTK ***************************
 
 GtkWidget     *window;
@@ -49,21 +48,8 @@ GtkWidget     *label6;
 GtkWidget     *TotalTask;
 GtkWidget     *Enter;
 GtkBuilder    *builder;
-//gboolean Display = gtk_switch_get_active(GTK_SWITCH(SwDisplay1));
-
 gdouble        totalTask;
-
-void SC_createSystemFromFile(GArray *readyQueue){
-    FILE *InputFile = fopen("sys.txt", "r");
-	while(!feof(InputFile)){
-		SC_Process readProcess={0,0};
-fscanf(InputFile, "%d %d",
-			&readProcess.compute_time,
-			&readProcess.period_time);
-		if(readProcess.period_time>0)
-			g_array_append_val(readyQueue, readProcess);
-    }
-}
+//gboolean Display = gtk_switch_get_active(GTK_SWITCH(SwDisplay1));
 
 void print_trace(SC_SimTrace *struct_trace_ptr){
 	int len = struct_trace_ptr->trace->len;
@@ -86,15 +72,18 @@ void print_trace(SC_SimTrace *struct_trace_ptr){
 	}
 }
 
-void plot_trace_pdf(){
-	RT_create_from_base_file();
-	RT_export_project();
+void plot_array_trace_pdf(GArray *struct_trace_ptr){
+	FILE* file = RT_create_file_buffer();
+	RT_print_trace(struct_trace_ptr,file);
+	fclose(file);
+	RT_export_pdf();
 	RT_open_window();
 }
 
 void run_simulation(SC_SimTrace *struct_trace_ptr, SC_Policy schedulable_policy){
 	GArray *readyQueue = g_array_new (FALSE, FALSE, sizeof(SC_Process));
     SC_createSystemFromFile(readyQueue);
+	struct_trace_ptr->number_of_tasks = readyQueue->len;
 	float utilization = SC_calc_cpu_utilization(readyQueue);
 	struct_trace_ptr->utilization=utilization;
 	if(utilization>1){
@@ -105,8 +94,21 @@ void run_simulation(SC_SimTrace *struct_trace_ptr, SC_Policy schedulable_policy)
 	g_array_free(readyQueue, TRUE);
 }
 
-
-// Ejecutar main task
+SC_Policy assign_policy(int policy_id){
+	switch (policy_id) {
+		case SC_RM_ID:
+			return SC_RM_policy;
+		break;
+		case SC_EDF_ID:
+			return SC_EDF_policy;
+		break;
+		case SC_LLS_ID:
+			return SC_LLS_policy;
+		break;
+		default: break;
+	}
+	return SC_RM_policy;
+}
 
 void on_Enter_clicked (GtkButton *c){
 	totalTask = gtk_spin_button_get_value (GTK_SPIN_BUTTON(TotalTask)); 
@@ -146,7 +148,6 @@ void on_Enter_clicked (GtkButton *c){
 	gtk_widget_show(label4); gtk_widget_show(compute4); gtk_widget_show(period4);
 	gtk_widget_show(label5); gtk_widget_show(compute5); gtk_widget_show(period5);
 	gtk_widget_show(label6); gtk_widget_show(compute6); gtk_widget_show(period6);}
-
 }
 
 void on_button1_clicked (GtkButton *b){
@@ -170,47 +171,83 @@ void on_button1_clicked (GtkButton *b){
  	gboolean Display = gtk_switch_get_active(GTK_SWITCH(SwDisplay1)); //False=Default-> All together, True-> Single slide  
 	FILE *out_file = fopen("sys.txt", "w"); // write only
         // write to file vs write to screen
-	for(int i=0;i<totalTask;i++){	//FALTA hacerlo dinamico
+	for(int i=0;i<totalTask;i++){	
 		fprintf(out_file, "%d %d\n", (int)Compute[i], (int)Period[i]); // write to file
 	}
 	fclose(out_file);
 	//it is needed to perform array of traces
-	SC_SimTrace sim_trace = {NULL, false, 0, 1};
-	sim_trace.trace = g_array_new(FALSE,FALSE,sizeof(int));
-	SC_Policy schedulable_policy_RM = SC_RM_policy;
-	SC_Policy schedulable_policy_EDF = SC_EDF_policy;
-	SC_Policy schedulable_policy_LLS = SC_LLS_policy;
+	GArray *array_sim_traces = g_array_new(FALSE,FALSE,sizeof(SC_SimTrace)); 
 	if (RM && !EDF && !LLF) {
-		run_simulation(&sim_trace,schedulable_policy_RM);
-		}
+		SC_SimTrace sim_trace = {NULL, false, 0, 1, 0, SC_RM_ID}; //RM
+		sim_trace.trace = g_array_new(FALSE,FALSE,sizeof(int));
+		g_array_append_val(array_sim_traces,sim_trace);
+	}
 	if (EDF && !RM && !LLF) {
-		run_simulation(&sim_trace,schedulable_policy_EDF);
-		}
+		SC_SimTrace sim_trace = {NULL, false, 0, 1, 0, SC_EDF_ID}; //RM
+		sim_trace.trace = g_array_new(FALSE,FALSE,sizeof(int));
+		g_array_append_val(array_sim_traces,sim_trace);
+	}
 	if (LLF && !EDF && !RM) {
-		run_simulation(&sim_trace,schedulable_policy_EDF);
-		}
+		SC_SimTrace sim_trace = {NULL, false, 0, 1, 0, SC_LLS_ID}; //RM
+		sim_trace.trace = g_array_new(FALSE,FALSE,sizeof(int));
+		g_array_append_val(array_sim_traces,sim_trace);
+	}
 	if (RM && EDF && !LLF) {
-		run_simulation(&sim_trace,schedulable_policy_RM);
-		run_simulation(&sim_trace,schedulable_policy_EDF);
-		}
+		SC_SimTrace sim_trace = {NULL, false, 0, 1, 0, SC_RM_ID}; //RM
+		sim_trace.trace = g_array_new(FALSE,FALSE,sizeof(int));
+		g_array_append_val(array_sim_traces,sim_trace);
+		sim_trace.policy_id = SC_EDF_ID; //EDF
+		sim_trace.trace = g_array_new(FALSE,FALSE,sizeof(int)); 
+		g_array_append_val(array_sim_traces,sim_trace);
+	}
 	if (EDF && !RM && LLF) {
-		run_simulation(&sim_trace,schedulable_policy_EDF);
-		run_simulation(&sim_trace,schedulable_policy_LLS);
-		}
+		SC_SimTrace sim_trace = {NULL, false, 0, 1, 0, SC_EDF_ID}; //RM
+		sim_trace.trace = g_array_new(FALSE,FALSE,sizeof(int)); 
+		g_array_append_val(array_sim_traces,sim_trace);
+		sim_trace.policy_id = SC_LLS_ID; //LLS
+		sim_trace.trace = g_array_new(FALSE,FALSE,sizeof(int)); 
+		g_array_append_val(array_sim_traces,sim_trace);
+	}
 	if (LLF && !EDF && RM) {
-		run_simulation(&sim_trace,schedulable_policy_RM);
-		run_simulation(&sim_trace,schedulable_policy_LLS);
-		}
+		SC_SimTrace sim_trace = {NULL, false, 0, 1, 0, SC_RM_ID}; //RM
+		sim_trace.trace = g_array_new(FALSE,FALSE,sizeof(int));
+		g_array_append_val(array_sim_traces,sim_trace);
+		sim_trace.policy_id = SC_LLS_ID; //LLS
+		sim_trace.trace = g_array_new(FALSE,FALSE,sizeof(int)); 
+		g_array_append_val(array_sim_traces,sim_trace);
+	}
 	if (LLF && EDF && RM) {
-		run_simulation(&sim_trace,schedulable_policy_EDF);
-		run_simulation(&sim_trace,schedulable_policy_RM);
-		run_simulation(&sim_trace,schedulable_policy_LLS);
-		}
+		SC_SimTrace sim_trace = {NULL, false, 0, 1, 0, SC_RM_ID}; //RM
+		sim_trace.trace = g_array_new(FALSE,FALSE,sizeof(int));
+		g_array_append_val(array_sim_traces,sim_trace);
+		sim_trace.policy_id = SC_EDF_ID; //EDF
+		sim_trace.trace = g_array_new(FALSE,FALSE,sizeof(int)); 
+		g_array_append_val(array_sim_traces,sim_trace);
+		sim_trace.policy_id = SC_LLS_ID; //LLS
+		sim_trace.trace = g_array_new(FALSE,FALSE,sizeof(int)); 
+		g_array_append_val(array_sim_traces,sim_trace);
+	}
+	/*sim_trace.policy_id = SC_EDF_ID; //EDF
+	sim_trace.trace = g_array_new(FALSE,FALSE,sizeof(int)); 
+	g_array_append_val(array_sim_traces,sim_trace);
 
-	print_trace(&sim_trace);
-	g_array_free(sim_trace.trace,TRUE);
+	sim_trace.policy_id = SC_LLS_ID; //LLS
+	sim_trace.trace = g_array_new(FALSE,FALSE,sizeof(int)); 
+	g_array_append_val(array_sim_traces,sim_trace);*/
+
+	for (int i=0;i<array_sim_traces->len;i++){
+		SC_Policy schedulable_policy = assign_policy(g_array_index(array_sim_traces,SC_SimTrace,i).policy_id);
+		run_simulation(&g_array_index(array_sim_traces,SC_SimTrace,i),schedulable_policy);
+		print_trace(&g_array_index(array_sim_traces,SC_SimTrace,i));
+	}
+	plot_array_trace_pdf(array_sim_traces);
+	for(int i=0;i<array_sim_traces->len;i++){
+		g_array_free(g_array_index(array_sim_traces,SC_SimTrace,i).trace,TRUE);
+	}
 }
 
+
+// Ejecutar main task
 int main(int argc, char** argv){
 	 gtk_init(&argc, &argv); //init Gtk
 	//---------------------------------
