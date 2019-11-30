@@ -158,7 +158,7 @@ void on_button1_clicked (GtkButton *b){
 	for(int i=0;i<array_sim_traces->len;i++){
 		g_array_free(g_array_index(array_sim_traces,SC_SimTrace,i).trace,TRUE);
 	}
-	gtk_close_window(window);
+	gtk_widget_destroy(GTK_WIDGET(window));
 }
 
 

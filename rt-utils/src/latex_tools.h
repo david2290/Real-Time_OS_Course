@@ -66,14 +66,14 @@ void RT_latex_frame_algorithm_info(FILE*f,int policy_id, float utilization, int 
 			fprintf(f, "\\begin{equation}\n");
 			fprintf(f, "\\sum_{i=0}^N \\frac{C_i}{D_i} = %f \\leq 1  %s\n",utilization,result_msg);
 			fprintf(f, "\\end{equation}\n");
-			fprintf(f, "The test passes it will run.\n");
+			fprintf(f, "The test passes, it may run.\n");
 		break;
 		case SC_LLS_ID:
 			fprintf(f, "%s\n",llf_info);
 			fprintf(f, "\\begin{equation}\n");
 			fprintf(f, "\\sum_{i=0}^N \\frac{C_i}{D_i} = %f \\leq 1  %s\n",utilization,result_msg);
 			fprintf(f, "\\end{equation}\n");
-			fprintf(f, "The test passes it will run.\n");
+			fprintf(f, "The test passes, it may run.\n");
 		break;
 		default: break;
 	}
