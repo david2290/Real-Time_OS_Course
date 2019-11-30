@@ -1,11 +1,12 @@
 #define FILE_NAME "output"
 
+
 void RT_create_template_file();
 void RT_print_trace(GArray *, FILE* f);
 void RT_export_pdf();
 void RT_open_window();
 void RT_latex_frame_title_string(FILE *, int);
-void RT_latex_frame_algorithm_info(FILE*,int,float);
+void RT_latex_frame_algorithm_info(FILE*,int,float,int);
 void RT_latex_packages(FILE*);
 void RT_latex_author_info(FILE *);
 void RT_latex_first_frames(GArray *, FILE*);
@@ -39,30 +40,40 @@ char rm_info[] ="Rate-monotonic scheduling (RMS) is a priority assignment algori
 char edf_info[] = "Earliest deadline first (EDF) or least time to go is a dynamic priority scheduling algorithm used in real-time operating systems to place processes in a priority queue. Whenever a scheduling event occurs (task finishes, new task released, etc.) the queue will be searched for the process closest to its deadline. This process is the next to be scheduled for execution.";
 char llf_info[] = "Least Laxity First (LLF) is a job level dynamic priority scheduling algorithm. It means that every instant is a scheduling event because laxity of each task changes on every instant of time. A task which has least laxity at an instant, it will have higher priority than others at this instant.";
 
-void RT_latex_frame_algorithm_info(FILE*f,int policy_id,float utilization){
-	char success_symbol[]="\\cmark";
-	char fail_symbol[]="\\xmark";
+void RT_latex_frame_algorithm_info(FILE*f,int policy_id, float utilization, int number_of_tasks){
+	char success_symbol[]="\\checkmark";
+	char fail_symbol[]="\\times";
 	char *result_msg = fail_symbol;
 	bool success = utilization <= 1.0f;
 	result_msg = (success)? success_symbol : fail_symbol;
+	float u_value = (number_of_tasks*(pow(2.0f,-number_of_tasks)-1.0f));
+	bool test = utilization <= u_value;
 	switch (policy_id) {
 		case SC_RM_ID:
+			result_msg = (test)? success_symbol : fail_symbol;
 			fprintf(f, "%s\n",rm_info);
 			fprintf(f, "\\begin{equation}\n");
 			fprintf(f, "\\sum_{i=0}^N \\frac{C_i}{D_i} = %f \\leq U(N) = N\\left( 2^{-N} -1 \\right) %s\n",utilization,result_msg);
 			fprintf(f, "\\end{equation}\n");
+			if(test){
+				fprintf(f, "The test passes it will run.\n");
+			}else{
+				fprintf(f, "The test does not pass. We can not assert any posibility.\n");
+			}
 		break;
 		case SC_EDF_ID:
 			fprintf(f, "%s\n",edf_info);
 			fprintf(f, "\\begin{equation}\n");
 			fprintf(f, "\\sum_{i=0}^N \\frac{C_i}{D_i} = %f \\leq 1  %s\n",utilization,result_msg);
 			fprintf(f, "\\end{equation}\n");
+			fprintf(f, "The test passes it will run.\n");
 		break;
 		case SC_LLS_ID:
 			fprintf(f, "%s\n",llf_info);
 			fprintf(f, "\\begin{equation}\n");
 			fprintf(f, "\\sum_{i=0}^N \\frac{C_i}{D_i} = %f \\leq 1  %s\n",utilization,result_msg);
 			fprintf(f, "\\end{equation}\n");
+			fprintf(f, "The test passes it will run.\n");
 		break;
 		default: break;
 	}
@@ -87,8 +98,9 @@ void RT_latex_first_frames(GArray *array_trace_ptr, FILE* f){
 		fprintf(f, "\\begin{frame}\n");
 		int policy_id = g_array_index(array_trace_ptr,SC_SimTrace,i).policy_id;
 		float utilization = g_array_index(array_trace_ptr,SC_SimTrace,i).utilization;
+		int number_of_tasks = g_array_index(array_trace_ptr,SC_SimTrace,i).number_of_tasks;
 		RT_latex_frame_title_string(f,policy_id);
-		RT_latex_frame_algorithm_info(f,policy_id,utilization);
+		RT_latex_frame_algorithm_info(f,policy_id,utilization,number_of_tasks);
 		fprintf(f, "\\end{frame}\n");
 	}
 }
@@ -191,6 +203,9 @@ void RT_print_trace(GArray *array_trace_ptr, FILE* f){
 	}
 	fprintf(f, "\\end{document}\n");
 }
+
+void RT_print_trace_mixed(){}
+
 
 void RT_export_pdf(){
 	char pdfltx_cmd[] = "pdflatex "FILE_NAME".tex pgfgantt.sty";

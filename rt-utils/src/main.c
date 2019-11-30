@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "schedule-utils.h"
 #include "latex_tools.h"
 //
@@ -10,7 +11,6 @@
 #include <string.h>
 #include <gtk/gtk.h>
 #include <gtk/gtkx.h>
-#include <math.h>
 #include <ctype.h>
 
 #define MAX_TASKS 6
