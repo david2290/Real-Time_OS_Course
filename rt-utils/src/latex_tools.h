@@ -209,6 +209,7 @@ void RT_print_trace_mixed(GArray *array_trace_ptr, FILE* f){
 	RT_latex_author_info(f);
 	RT_latex_first_frames(array_trace_ptr,f);
 	int number_of_frames = (g_array_index(array_trace_ptr,SC_SimTrace,0).trace->len / 40)+1;
+	number_of_frames = (g_array_index(array_trace_ptr,SC_SimTrace,0).trace->len%40==0)?number_of_frames-1:number_of_frames;
 	for(int scheduler_idx=1; scheduler_idx < array_trace_ptr->len; scheduler_idx++){
 		number_of_frames = (g_array_index(array_trace_ptr,SC_SimTrace,scheduler_idx).trace->len / 40)+1;
 	}
