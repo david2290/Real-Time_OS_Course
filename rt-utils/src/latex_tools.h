@@ -56,7 +56,7 @@ void RT_latex_frame_algorithm_info(FILE*f,int policy_id, float utilization, int 
 			fprintf(f, "\\sum_{i=0}^N \\frac{C_i}{D_i} = %f \\leq U(N) = N\\left( 2^{-N} -1 \\right) %s\n",utilization,result_msg);
 			fprintf(f, "\\end{equation}\n");
 			if(test){
-				fprintf(f, "The test passes it will run.\n");
+				fprintf(f, "The test passes, it will run.\n");
 			}else{
 				fprintf(f, "The test does not pass. We can not assert any posibility.\n");
 			}
@@ -198,13 +198,34 @@ void RT_print_trace(GArray *array_trace_ptr, FILE* f){
 	RT_latex_author_info(f);
 	RT_latex_first_frames(array_trace_ptr,f);
 	for(int i=0; i<array_trace_ptr->len; i++){
-		printf("trace len: %d\n", g_array_index(array_trace_ptr,SC_SimTrace,i).trace->len);
 		RT_latex_simulation_frame_per_algorithm(&g_array_index(array_trace_ptr,SC_SimTrace,i), f);
 	}
 	fprintf(f, "\\end{document}\n");
 }
 
-void RT_print_trace_mixed(){}
+void RT_print_trace_mixed(GArray *array_trace_ptr, FILE* f){
+	RT_latex_packages(f);
+	fprintf(f, "\\begin{document}\n");
+	RT_latex_author_info(f);
+	RT_latex_first_frames(array_trace_ptr,f);
+	int number_of_frames = (g_array_index(array_trace_ptr,SC_SimTrace,0).trace->len / 40)+1;
+	for(int scheduler_idx=1; scheduler_idx < array_trace_ptr->len; scheduler_idx++){
+		number_of_frames = (g_array_index(array_trace_ptr,SC_SimTrace,scheduler_idx).trace->len / 40)+1;
+	}
+	for(int frame_idx=0; frame_idx < number_of_frames; frame_idx++){
+		for(int scheduler_idx=0; scheduler_idx < array_trace_ptr->len; scheduler_idx++){
+			fprintf(f, "\\begin{frame}\n");
+			fprintf(f, "\\frametitle{Scheduling}\n");
+			fprintf(f,"\t\\begin{ganttchart}[vgrid,x unit=0.25cm,y unit title=0.3cm,y unit chart=0.2cm,title label font=\\fontsize{3}{4}\\selectfont,bar label font=\\fontsize{3}{4}\\selectfont]{1}{40}\n");
+			RT_latex_title_string(f,g_array_index(array_trace_ptr,SC_SimTrace,scheduler_idx).policy_id,frame_idx);
+			fprintf(f, "\t\\gantttitlelist{%d,...,%d}{1} \\\\\n",(frame_idx*40), (frame_idx*40) + 40 );
+			RT_latex_ganttbar_from_trace(&g_array_index(array_trace_ptr,SC_SimTrace,scheduler_idx),f, (frame_idx*40));
+			fprintf(f, "\t\\end{ganttchart}\n");
+			fprintf(f, "\\end{frame}\n");
+		}
+	}
+	fprintf(f, "\\end{document}\n");
+}
 
 
 void RT_export_pdf(){

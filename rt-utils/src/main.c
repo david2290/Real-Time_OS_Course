@@ -57,9 +57,13 @@ void print_trace(SC_SimTrace *struct_trace_ptr){
 	}
 }
 
-void plot_array_trace_pdf(GArray *struct_trace_ptr){
+void plot_array_trace_pdf(GArray *struct_trace_ptr,gboolean Display_format){
 	FILE* file = RT_create_file_buffer();
-	RT_print_trace(struct_trace_ptr,file);
+	if(Display_format){
+		RT_print_trace_mixed(struct_trace_ptr,file);
+	}else{
+		RT_print_trace(struct_trace_ptr,file);
+	}
 	fclose(file);
 	RT_export_pdf();
 	RT_open_window();
@@ -128,7 +132,7 @@ void on_button1_clicked (GtkButton *b){
 	fclose(out_file);
 	//it is needed to perform array of traces
 	GArray *array_sim_traces = g_array_new(FALSE,FALSE,sizeof(SC_SimTrace));
-	if (RM) {
+	if(RM) {
 		SC_SimTrace sim_trace = {NULL, false, 0, 1, 0, SC_RM_ID}; //RM
 		sim_trace.trace = g_array_new(FALSE,FALSE,sizeof(int));
 		g_array_append_val(array_sim_traces,sim_trace);
@@ -148,7 +152,9 @@ void on_button1_clicked (GtkButton *b){
 		run_simulation(&g_array_index(array_sim_traces,SC_SimTrace,i),schedulable_policy);
 		print_trace(&g_array_index(array_sim_traces,SC_SimTrace,i));
 	}
-	plot_array_trace_pdf(array_sim_traces);
+
+	plot_array_trace_pdf(array_sim_traces,Display_format);
+
 	for(int i=0;i<array_sim_traces->len;i++){
 		g_array_free(g_array_index(array_sim_traces,SC_SimTrace,i).trace,TRUE);
 	}
