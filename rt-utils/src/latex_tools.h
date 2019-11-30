@@ -209,10 +209,12 @@ void RT_print_trace_mixed(GArray *array_trace_ptr, FILE* f){
 	RT_latex_author_info(f);
 	RT_latex_first_frames(array_trace_ptr,f);
 	int number_of_frames = (g_array_index(array_trace_ptr,SC_SimTrace,0).trace->len / 40)+1;
-	number_of_frames = (g_array_index(array_trace_ptr,SC_SimTrace,0).trace->len%40==0)?number_of_frames-1:number_of_frames;
+	number_of_frames = (g_array_index(array_trace_ptr,SC_SimTrace,0).trace->len%40d==0)?number_of_frames-1:number_of_frames;
+	printf("valor: %d\n",number_of_frames);
 	for(int scheduler_idx=1; scheduler_idx < array_trace_ptr->len; scheduler_idx++){
 		number_of_frames = (g_array_index(array_trace_ptr,SC_SimTrace,scheduler_idx).trace->len / 40)+1;
 		number_of_frames = (g_array_index(array_trace_ptr,SC_SimTrace,0).trace->len%40==0)?number_of_frames-1:number_of_frames;
+		printf("valor: %d\n",number_of_frames);
 	}
 	for(int frame_idx=0; frame_idx < number_of_frames; frame_idx++){
 		fprintf(f, "\\begin{frame}\n");
@@ -221,7 +223,7 @@ void RT_print_trace_mixed(GArray *array_trace_ptr, FILE* f){
 				fprintf(f,"\t\\begin{ganttchart}[vgrid,x unit=0.25cm,y unit title=0.3cm,y unit chart=0.2cm,title label font=\\fontsize{3}{4}\\selectfont,bar label font=\\fontsize{3}{4}\\selectfont]{1}{40}\n");
 				RT_latex_title_string(f,g_array_index(array_trace_ptr,SC_SimTrace,scheduler_idx).policy_id,frame_idx);
 				fprintf(f, "\t\\gantttitlelist{%d,...,%d}{1} \\\\\n",(frame_idx*40)+1, (frame_idx*40) + 40 );
-			if(frame_idx*40 <= g_array_index(array_trace_ptr,SC_SimTrace,scheduler_idx).trace->len){				
+			if(frame_idx*40 <= g_array_index(array_trace_ptr,SC_SimTrace,scheduler_idx).trace->len){
 				RT_latex_ganttbar_from_trace(&g_array_index(array_trace_ptr,SC_SimTrace,scheduler_idx),f, (frame_idx*40));
 			}
 			fprintf(f, "\t\\end{ganttchart}\n");
