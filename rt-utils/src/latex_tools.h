@@ -213,16 +213,16 @@ void RT_print_trace_mixed(GArray *array_trace_ptr, FILE* f){
 		number_of_frames = (g_array_index(array_trace_ptr,SC_SimTrace,scheduler_idx).trace->len / 40)+1;
 	}
 	for(int frame_idx=0; frame_idx < number_of_frames; frame_idx++){
+		fprintf(f, "\\begin{frame}\n");
+		fprintf(f, "\\frametitle{Scheduling}\n");
 		for(int scheduler_idx=0; scheduler_idx < array_trace_ptr->len; scheduler_idx++){
-			fprintf(f, "\\begin{frame}\n");
-			fprintf(f, "\\frametitle{Scheduling}\n");
 			fprintf(f,"\t\\begin{ganttchart}[vgrid,x unit=0.25cm,y unit title=0.3cm,y unit chart=0.2cm,title label font=\\fontsize{3}{4}\\selectfont,bar label font=\\fontsize{3}{4}\\selectfont]{1}{40}\n");
 			RT_latex_title_string(f,g_array_index(array_trace_ptr,SC_SimTrace,scheduler_idx).policy_id,frame_idx);
-			fprintf(f, "\t\\gantttitlelist{%d,...,%d}{1} \\\\\n",(frame_idx*40), (frame_idx*40) + 40 );
+			fprintf(f, "\t\\gantttitlelist{%d,...,%d}{1} \\\\\n",(frame_idx*40)+1, (frame_idx*40) + 40 );
 			RT_latex_ganttbar_from_trace(&g_array_index(array_trace_ptr,SC_SimTrace,scheduler_idx),f, (frame_idx*40));
 			fprintf(f, "\t\\end{ganttchart}\n");
-			fprintf(f, "\\end{frame}\n");
-		}
+
+		}fprintf(f, "\\end{frame}\n");
 	}
 	fprintf(f, "\\end{document}\n");
 }
