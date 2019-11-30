@@ -130,7 +130,7 @@ void RT_latex_ganttbar_from_trace(SC_SimTrace *struct_trace_ptr, FILE* f, int st
 	for(int i=0;i<number_of_tasks;i++)
 		vector_string[i] = g_strdup_printf("");
 
-	int task_runnning = g_array_index(trace,int, 0);
+	int task_runnning = g_array_index(trace,int, start_from);
 	int t_begin = 1;  int t_end = 1;
 
 	for(int i=start_from; i<t_steps; i++){
