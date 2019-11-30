@@ -59,6 +59,7 @@ void print_trace(SC_SimTrace *struct_trace_ptr){
 
 void plot_array_trace_pdf(GArray *struct_trace_ptr,gboolean Display_format){
 	FILE* file = RT_create_file_buffer();
+	printf("step 0\n");
 	if(Display_format){
 		RT_print_trace_mixed(struct_trace_ptr,file);
 	}else{

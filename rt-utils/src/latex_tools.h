@@ -204,16 +204,24 @@ void RT_print_trace(GArray *array_trace_ptr, FILE* f){
 }
 
 void RT_print_trace_mixed(GArray *array_trace_ptr, FILE* f){
+	printf("step 1\n");
 	RT_latex_packages(f);
+	printf("step 2\n");
 	fprintf(f, "\\begin{document}\n");
+	printf("step 3\n");
 	RT_latex_author_info(f);
+	printf("step 4\n");
 	RT_latex_first_frames(array_trace_ptr,f);
+	printf("step 5\n");
 	int number_of_frames = (g_array_index(array_trace_ptr,SC_SimTrace,0).trace->len / 40)+1;
+	printf("step 6\n");
 	number_of_frames = (g_array_index(array_trace_ptr,SC_SimTrace,0).trace->len%40==0)?number_of_frames-1:number_of_frames;
+	printf("step 7\n");
 	for(int scheduler_idx=1; scheduler_idx < array_trace_ptr->len; scheduler_idx++){
 		number_of_frames = (g_array_index(array_trace_ptr,SC_SimTrace,scheduler_idx).trace->len / 40)+1;
 		number_of_frames = (g_array_index(array_trace_ptr,SC_SimTrace,0).trace->len%40==0)?number_of_frames-1:number_of_frames;
 	}
+	printf("step 8\n");
 	for(int frame_idx=0; frame_idx < number_of_frames; frame_idx++){
 		fprintf(f, "\\begin{frame}\n");
 		fprintf(f, "\\frametitle{Scheduling}\n");
