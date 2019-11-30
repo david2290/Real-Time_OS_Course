@@ -111,7 +111,7 @@ void on_Enter_clicked (GtkButton *c){
 
 void on_button1_clicked (GtkButton *b){
 	int Compute[6]; int Period[6];
-	for(int i=0;i<MAX_TASKS; i++){
+	for(int i=0;i<totalTask; i++){
 		Compute[i] = gtk_spin_button_get_value (GTK_SPIN_BUTTON(compute_array_widget_ptr[i]));
 		Period[i] = gtk_spin_button_get_value (GTK_SPIN_BUTTON(period_array_widget_ptr[i]));
 	}

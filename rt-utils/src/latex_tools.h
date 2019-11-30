@@ -34,21 +34,34 @@ void RT_latex_frame_title_string(FILE *f, int policy_id){
 	}
 }
 
+
+char rm_info[] ="Rate-monotonic scheduling (RMS) is a priority assignment algorithm used in real-time operating systems (RTOS) with a static-priority scheduling class. The static priorities are assigned according to the cycle duration of the job, so a shorter cycle duration results in a higher job priority.";
+char edf_info[] = "Earliest deadline first (EDF) or least time to go is a dynamic priority scheduling algorithm used in real-time operating systems to place processes in a priority queue. Whenever a scheduling event occurs (task finishes, new task released, etc.) the queue will be searched for the process closest to its deadline. This process is the next to be scheduled for execution.";
+char llf_info[] = "Least Laxity First (LLF) is a job level dynamic priority scheduling algorithm. It means that every instant is a scheduling event because laxity of each task changes on every instant of time. A task which has least laxity at an instant, it will have higher priority than others at this instant.";
+
 void RT_latex_frame_algorithm_info(FILE*f,int policy_id,float utilization){
+	char success_symbol[]="\\cmark";
+	char fail_symbol[]="\\xmark";
+	char *result_msg = fail_symbol;
+	bool success = utilization <= 1.0f;
+	result_msg = (success)? success_symbol : fail_symbol;
 	switch (policy_id) {
 		case SC_RM_ID:
+			fprintf(f, "%s\n",rm_info);
 			fprintf(f, "\\begin{equation}\n");
-			fprintf(f, "\\sum_{i=0}^N \\frac{C_i}{D_i} = %f \\leq U(N) = N\\left( 2^{-N} -1 \\right)\n",utilization);
+			fprintf(f, "\\sum_{i=0}^N \\frac{C_i}{D_i} = %f \\leq U(N) = N\\left( 2^{-N} -1 \\right) %s\n",utilization,result_msg);
 			fprintf(f, "\\end{equation}\n");
 		break;
 		case SC_EDF_ID:
+			fprintf(f, "%s\n",edf_info);
 			fprintf(f, "\\begin{equation}\n");
-			fprintf(f, "\\sum_{i=0}^N \\frac{C_i}{D_i} = %f \\leq 1 \n",utilization);
+			fprintf(f, "\\sum_{i=0}^N \\frac{C_i}{D_i} = %f \\leq 1  %s\n",utilization,result_msg);
 			fprintf(f, "\\end{equation}\n");
 		break;
 		case SC_LLS_ID:
+			fprintf(f, "%s\n",llf_info);
 			fprintf(f, "\\begin{equation}\n");
-			fprintf(f, "\\sum_{i=0}^N \\frac{C_i}{D_i} = %f \\leq 1\n",utilization);
+			fprintf(f, "\\sum_{i=0}^N \\frac{C_i}{D_i} = %f \\leq 1  %s\n",utilization,result_msg);
 			fprintf(f, "\\end{equation}\n");
 		break;
 		default: break;
@@ -63,7 +76,7 @@ void RT_latex_packages(FILE* f){
 
 void RT_latex_author_info(FILE *f){
 	fprintf(f, "\\title{Scheduler Simulator}\n");
-	fprintf(f, "\\author{Kaleb Alfaro Badilla, David Ramírez Arroyo \\& Alejandro }\n");
+	fprintf(f, "\\author{Kaleb Alfaro Badilla, David Ramírez Arroyo \\& Alejandro Bermudez \\\\ \n Diseño de Sistemas de Tiempo Real \\\\ \n Cuatrimestre III }\n");
 	fprintf(f, "\\date{\\today}\n");
 }
 
