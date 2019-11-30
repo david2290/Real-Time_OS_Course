@@ -72,11 +72,12 @@ void RT_latex_packages(FILE* f){
 	fprintf(f, "\\documentclass{beamer}\n");
 	fprintf(f, "\\usepackage{tikz}\n");
 	fprintf(f, "\\usepackage{pgfgantt}\n");
+	fprintf(f, "\\usepackage{pifont}\n");
 }
 
 void RT_latex_author_info(FILE *f){
-	fprintf(f, "\\title{Scheduler Simulator}\n");
-	fprintf(f, "\\author{Kaleb Alfaro Badilla, David Ramírez Arroyo \\& Alejandro Bermudez \\\\ \n Diseño de Sistemas de Tiempo Real \\\\ \n Cuatrimestre III }\n");
+	fprintf(f, "\\title{Real-Time Scheduler Simulator}\n");
+	fprintf(f, "\\author{Kaleb Alfaro Badilla, David Ramírez Arroyo \\& Alejandro Bermudez \\\\ \n Design of Real-Time Systems \\\\ \n 3rd Quarter }\n");
 	fprintf(f, "\\date{\\today}\n");
 }
 
@@ -197,6 +198,6 @@ void RT_export_pdf(){
 }
 
 void RT_open_window(){
-	char pdf_viewer[] = "xdg-open "FILE_NAME".pdf &";
+	char pdf_viewer[] = "xdg-open "FILE_NAME".pdf";
 	system(pdf_viewer);
 }
